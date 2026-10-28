@@ -93,6 +93,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
 form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 form .full{grid-column:1/-1}
+.cur{padding:4px 12px;font-size:12.5px}
+.cur.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .pitch{font-family:var(--display);font-weight:600;font-size:clamp(18px,2.4vw,24px);line-height:1.25;margin:0;text-wrap:balance}
 .how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .how div{font-size:13.5px;color:var(--muted)}
@@ -144,15 +146,20 @@ form .full{grid-column:1/-1}
       </div>
 
       <div class="wallet">
-        <div class="wbox"><span class="lbl">Community treasury</span><b id="bal">5.0000</b><span class="small muted" id="unit">USDC (simulated)</span></div>
+        <div class="wbox"><span class="lbl">Community treasury</span><b id="bal">5.0000</b><span class="small muted" id="unit">USDC (simulated)</span><span class="small muted" id="feeBal" hidden></span></div>
         <div class="wbox"><span class="lbl">Paying wallet</span><div class="addr" id="addr">Not connected</div></div>
       </div>
       <div class="row">
         <button class="go" id="connect">Connect wallet</button>
         <span id="fundRow" class="row" hidden>
           <button id="airdrop">Get devnet SOL</button>
-          <a class="small" href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">Solana faucet</a>
+          <a class="small" id="faucetLink" href="https://faucet.circle.com" target="_blank" rel="noopener" style="color:var(--accent)">Get devnet USDC</a>
         </span>
+      </div>
+      <div class="row small" role="radiogroup" aria-label="Pay in">
+        <span class="lbl">Pay in</span>
+        <button class="cur on" id="curUSDC" data-cur="USDC" role="radio" aria-checked="true">USDC</button>
+        <button class="cur" id="curSOL" data-cur="SOL" role="radio" aria-checked="false">SOL</button>
       </div>
       <p class="small muted" id="walletHint" style="margin:0">Connect Phantom or Brave Wallet on Solana devnet to make real payments. Your wallet asks you to approve each one.</p>
 
@@ -207,7 +214,7 @@ form .full{grid-column:1/-1}
       <div><b>Work</b>Coco runs its installed skills as tasks around the house.</div>
       <div><b>Pay</b>Each use sends a payment from the community treasury (a Solana wallet such as Phantom) to the developer, and 5% stays in the community treasury.</div>
     </div>
-    <p class="small muted" style="margin:0">Prototype for IslandDAO V5. The robot is simulated. With a wallet connected on Solana devnet, payments are real transfers (devnet SOL stands in for USDC). Without it, they are simulated.</p>
+    <p class="small muted" style="margin:0">Prototype for IslandDAO V5. The robot is simulated. With a wallet connected on Solana devnet, payments are real USDC (or SOL) transfers. Without it, they are simulated.</p>
   </section>
 </div>
 
@@ -235,6 +242,38 @@ let votes={2:5,3:3,4:2},voters={2:["dean","sol","mia","ravi","jo"],3:["leo","kim
 let voted=false,round=1,nextId=5,taskIdx=0,busy=false,auto=false;
 let txs=[],totals={paid:0,runs:0};
 
+/* ---------- USDC on devnet (Circle) without extra libraries ---------- */
+const USDC_MINT="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", USDC_DECIMALS=6;
+const TOKEN_PROGRAM="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", ATA_PROGRAM="ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+let cur="USDC";
+const pk=a=>new W.PublicKey(a);
+function ataOf(ownerPk){
+  return W.PublicKey.findProgramAddressSync([ownerPk.toBuffer(),pk(TOKEN_PROGRAM).toBuffer(),pk(USDC_MINT).toBuffer()],pk(ATA_PROGRAM))[0];
+}
+function createAtaIdempotentIx(payer,ata,ownerPk){
+  return new W.TransactionInstruction({programId:pk(ATA_PROGRAM),data:Uint8Array.from([1]),keys:[
+    {pubkey:payer,isSigner:true,isWritable:true},{pubkey:ata,isSigner:false,isWritable:true},
+    {pubkey:ownerPk,isSigner:false,isWritable:false},{pubkey:pk(USDC_MINT),isSigner:false,isWritable:false},
+    {pubkey:W.SystemProgram.programId,isSigner:false,isWritable:false},{pubkey:pk(TOKEN_PROGRAM),isSigner:false,isWritable:false}]});
+}
+function transferCheckedIx(src,dst,ownerPk,amount){
+  const data=new Uint8Array(10);data[0]=12;
+  let a=BigInt(amount);for(let i=0;i<8;i++){data[1+i]=Number(a&255n);a>>=8n}
+  data[9]=USDC_DECIMALS;
+  return new W.TransactionInstruction({programId:pk(TOKEN_PROGRAM),data,keys:[
+    {pubkey:src,isSigner:false,isWritable:true},{pubkey:pk(USDC_MINT),isSigner:false,isWritable:false},
+    {pubkey:dst,isSigner:false,isWritable:true},{pubkey:ownerPk,isSigner:true,isWritable:false}]});
+}
+async function usdcBalance(ownerPk){
+  try{const r=await conn.getTokenAccountBalance(ataOf(ownerPk));return Number(r.value.uiAmount||0)}catch(e){return 0}
+}
+function setCur(c){
+  cur=c;
+  ["USDC","SOL"].forEach(k=>{const b=$("cur"+k);b.classList.toggle("on",k===c);b.setAttribute("aria-checked",k===c)});
+  setMode();
+}
+$("curUSDC").onclick=()=>setCur("USDC");$("curSOL").onclick=()=>setCur("SOL");
+
 /* ---------- wallet / mode (Phantom, Brave Wallet or any Solana wallet on devnet) ---------- */
 let live=false,netOk=false,conn=null,owner=null,simBal=5;
 const wallet=()=>{
@@ -249,7 +288,8 @@ function setMode(){
   live=netOk&&!!owner;
   $("modeDot").classList.toggle("live",live);
   $("modeTxt").textContent=live?"Live · Solana devnet":netOk?"Devnet ready · connect wallet":"Simulated payments";
-  $("unit").textContent=live?"SOL on devnet":"USDC (simulated)";
+  $("unit").textContent=live?`${cur} on devnet`:`${cur} (simulated)`;
+  $("feeBal").hidden=!(live&&cur==="USDC");
   $("fundRow").hidden=!live;
   refreshBal();
 }
@@ -284,7 +324,13 @@ $("connect").onclick=async()=>{
 };
 async function refreshBal(){
   if(!live)return $("bal").textContent=simBal.toFixed(4);
-  try{const l=await conn.getBalance(owner);$("bal").textContent=(l/1e9).toFixed(4)}catch(e){}
+  try{
+    const sol=(await conn.getBalance(owner))/1e9;
+    if(cur==="USDC"){
+      $("bal").textContent=(await usdcBalance(owner)).toFixed(4);
+      $("feeBal").textContent=` · ${sol.toFixed(4)} SOL for network fees`;
+    }else $("bal").textContent=sol.toFixed(4);
+  }catch(e){}
 }
 $("airdrop").onclick=async()=>{
   const b=$("airdrop");b.disabled=true;$("status").textContent="Requesting 1 devnet SOL…";
@@ -346,10 +392,16 @@ async function pay(s){
   $("status").textContent=`Paying ${s.price.toFixed(3)} to ${s.dev}…`;
   try{
     if(live){
-      $("status").textContent=`Approve the payment in ${walletName()}: ${devAmt.toFixed(4)} SOL to ${s.dev}`;
-      const t=new W.Transaction().add(
-        W.SystemProgram.transfer({fromPubkey:owner,toPubkey:new W.PublicKey(s.wallet),lamports:Math.round(devAmt*1e9)})
-      );
+      const t=new W.Transaction();
+      if(cur==="USDC"){
+        const have=await usdcBalance(owner);
+        if(have<devAmt)throw new Error("NO_USDC");
+        const dev=pk(s.wallet),src=ataOf(owner),dst=ataOf(dev);
+        t.add(createAtaIdempotentIx(owner,dst,dev),transferCheckedIx(src,dst,owner,Math.round(devAmt*10**USDC_DECIMALS)));
+      }else{
+        t.add(W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(s.wallet),lamports:Math.round(devAmt*1e9)}));
+      }
+      $("status").textContent=`Approve the payment in ${walletName()}: ${devAmt.toFixed(4)} ${cur} to ${s.dev}`;
       const bh=await conn.getLatestBlockhash();
       t.feePayer=owner;t.recentBlockhash=bh.blockhash;
       const w=wallet();let sig;
@@ -365,13 +417,13 @@ async function pay(s){
       if(simBal<s.price)throw new Error("empty");
       await new Promise(r=>setTimeout(r,600));simBal-=s.price;tx.sig=fake(88);
     }
-    tx.status="confirmed";s.runs++;s.earned+=devAmt;totals.paid+=devAmt;totals.runs++;
-    $("status").textContent=`Done. Paid ${devAmt.toFixed(4)} to ${s.dev} for “${s.name}”. 5% stays with the community.`;
+    tx.status="confirmed";tx.cur=live?cur:"USDC";s.runs++;s.earned+=devAmt;totals.paid+=devAmt;totals.runs++;
+    $("status").textContent=`Done. Paid ${devAmt.toFixed(4)} ${live?cur:"USDC"} to ${s.dev} for “${s.name}”. 5% stays with the community.`;
   }catch(e){
     tx.status="failed";auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false");
     const m=String(e&&e.message||e);
     console.error("Payment error",e);
-    $("status").textContent=!live?"Treasury empty.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check Phantom is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
+    $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check Phantom is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
   }
   busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
   refreshBal();renderLedger();renderStore();
@@ -395,7 +447,7 @@ function renderLedger(){
   if(!txs.length)return;
   $("ledger").innerHTML=txs.slice(0,40).map(t=>`
    <div class="tx">
-     <span><b>Coco</b> → ${esc(t.dev)}</span><span class="amt">${t.amt.toFixed(4)}</span>
+     <span><b>Coco</b> → ${esc(t.dev)}</span><span class="amt">${t.amt.toFixed(4)} ${t.cur||""}</span>
      <span class="small muted">${esc(t.skill)}</span>
      <span class="pill ${t.status=="confirmed"?"ok":t.status=="failed"?"err":""}">${t.status}</span>
      <span class="sig">${t.sig?(t.live?`<a href="${EXPLORER(t.sig)}" target="_blank" rel="noopener">${t.sig}</a>`:t.sig+" (simulated)"):"…"}</span>

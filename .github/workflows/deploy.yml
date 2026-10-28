@@ -1,0 +1,25 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Publish the site to the existing Netlify project
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: 774dae81-dcf7-42e4-b800-fad91c6ba090
+        run: |
+          mkdir -p public
+          cp index.html web3.min.js favicon.png apple-touch-icon.png public/
+          npx --yes netlify-cli@17 deploy --prod --dir=public --site="$NETLIFY_SITE_ID" --message "Deploy from GitHub ${GITHUB_SHA::7}"

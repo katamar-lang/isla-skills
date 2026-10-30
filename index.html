@@ -152,6 +152,7 @@ form .full{grid-column:1/-1}
       </div>
       <div class="row">
         <button class="go" id="connect">Connect wallet</button>
+        <select id="walletPick" aria-label="Wallet" hidden></select>
         <span id="fundRow" class="row" hidden>
           <button id="airdrop">Get devnet SOL</button>
           <a class="small" id="faucetLink" href="https://faucet.circle.com" target="_blank" rel="noopener" style="color:var(--accent)">Get devnet USDC</a>
@@ -162,7 +163,7 @@ form .full{grid-column:1/-1}
         <button class="cur on" id="curUSDC" data-cur="USDC" role="radio" aria-checked="true">USDC</button>
         <button class="cur" id="curSOL" data-cur="SOL" role="radio" aria-checked="false">SOL</button>
       </div>
-      <p class="small muted" id="walletHint" style="margin:0">Connect Phantom or Brave Wallet on Solana devnet to make real payments. Your wallet asks you to approve each one.</p>
+      <p class="small muted" id="walletHint" style="margin:0">Connect Phantom, Solflare or Backpack on Solana devnet to make real payments. Your wallet asks you to approve each one.</p>
 
       <div>
         <span class="lbl">Installed skills</span>
@@ -283,13 +284,26 @@ $("curUSDC").onclick=()=>setCur("USDC");$("curSOL").onclick=()=>setCur("SOL");
 
 /* ---------- wallet / mode (Phantom, Brave Wallet or any Solana wallet on devnet) ---------- */
 let live=false,netOk=false,conn=null,owner=null,simBal=5;
-const wallet=()=>{
-  if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom&&!window.phantom.solana.isBraveWallet)return window.phantom.solana;
-  if(window.braveSolana)return window.braveSolana;
-  if(window.solana&&window.solana.connect)return window.solana;
-  return null;
-};
-const walletName=()=>{const w=wallet();return !w?"wallet":w.isBraveWallet?"Brave Wallet":w.isPhantom?"Phantom":"wallet"};
+/* Every Solana wallet the browser offers: Phantom, Solflare, Backpack, Brave Wallet, or any other. */
+function detectWallets(){
+  const out=[],ph=window.phantom&&window.phantom.solana;
+  if(ph&&ph.isPhantom&&!ph.isBraveWallet)out.push({key:"phantom",name:"Phantom",p:ph});
+  if(window.solflare&&window.solflare.isSolflare)out.push({key:"solflare",name:"Solflare",p:window.solflare});
+  if(window.backpack&&(window.backpack.isBackpack||window.backpack.connect))out.push({key:"backpack",name:"Backpack",p:window.backpack});
+  if(window.braveSolana)out.push({key:"brave",name:"Brave Wallet",p:window.braveSolana});
+  if(!out.length&&window.solana&&window.solana.connect)out.push({key:"other",name:window.solana.isPhantom?"Phantom":window.solana.isSolflare?"Solflare":"wallet",p:window.solana});
+  return out;
+}
+let chosenKey=null;
+const pickedWallet=()=>{const l=detectWallets();return l.find(x=>x.key===chosenKey)||l[0]||null};
+const wallet=()=>{const w=pickedWallet();return w?w.p:null};
+const walletName=()=>{const w=pickedWallet();return w?w.name:"wallet"};
+const pubkeyFrom=(r,p)=>(r&&r.publicKey)||(p&&p.publicKey)||null;
+function renderWalletPick(){
+  const l=detectWallets(),sel=$("walletPick");
+  sel.hidden=l.length<2||!!owner;
+  sel.innerHTML=l.map(x=>`<option value="${x.key}" ${pickedWallet()&&x.key===pickedWallet().key?"selected":""}>${x.name}</option>`).join("");
+}
 const withTimeout=(pr,ms)=>Promise.race([pr,new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),ms))]);
 function setMode(){
   live=netOk&&!!owner;
@@ -315,10 +329,12 @@ async function initNetwork(){
   const p=wallet();
   if(p){
     try{p.on&&p.on("accountChanged",pk=>{owner=pk||null;showOwner();setMode()})}catch(e){}
-    try{const r=await withTimeout(p.connect({onlyIfTrusted:true}),1500);if(r&&r.publicKey){owner=r.publicKey;showOwner();setMode()}}catch(e){}
+    try{const r=await withTimeout(p.connect({onlyIfTrusted:true}),1500);const k=pubkeyFrom(r,p);if(k){owner=k;showOwner();setMode()}}catch(e){}
   }
 }
+$("walletPick").onchange=e=>{chosenKey=e.target.value;showOwner()};
 function showOwner(){
+  renderWalletPick();
   if(boardMode)applyBoard([...boardCache.values()].filter(e=>e.data).sort((a,b)=>a.slot-b.slot||0));
   $("addr").textContent=owner?owner.toBase58():"Not connected";
   $("connect").textContent=owner?"Disconnect":(wallet()?"Connect "+walletName():"Connect wallet");
@@ -326,9 +342,9 @@ function showOwner(){
 $("connect").onclick=async()=>{
   const p=wallet();
   if(owner){try{await p.disconnect()}catch(e){}owner=null;showOwner();return setMode()}
-  if(!p){$("status").textContent="No Solana wallet found. Install Phantom (phantom.com) or use Brave Wallet, then reload.";return}
+  if(!p){$("status").textContent="No Solana wallet found. On your phone, open this link inside your wallet app's browser. On a computer, install Phantom, Solflare or Backpack, then reload.";return}
   if(!netOk){$("status").textContent="Can't reach Solana devnet. In Brave, turn off Shields for this site and reload.";return}
-  try{const r=await p.connect();owner=r.publicKey;showOwner();setMode();$("status").textContent=walletName()+" connected. Make sure it is set to Solana Devnet."}
+  try{const r=await p.connect();owner=pubkeyFrom(r,p);if(!owner)throw new Error("no key");showOwner();setMode();$("status").textContent=walletName()+" connected. Make sure it is set to Solana Devnet."}
   catch(e){$("status").textContent="Connection cancelled in "+walletName()+"."}
 };
 async function refreshBal(){
@@ -354,7 +370,8 @@ async function sendTx(t){
   t.feePayer=owner;t.recentBlockhash=bh.blockhash;
   const w=wallet();let sig;
   if(w.signAndSendTransaction){
-    sig=(await w.signAndSendTransaction(t)).signature;
+    const r=await w.signAndSendTransaction(t);
+    sig=typeof r==="string"?r:r.signature;
   }else{
     const signed=await w.signTransaction(t);
     sig=await conn.sendRawTransaction(signed.serialize());
@@ -529,7 +546,7 @@ async function pay(s){
     tx.status="failed";auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false");
     const m=String(e&&e.message||e);
     console.error("Payment error",e);
-    $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check Phantom is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
+    $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
   }
   busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
   refreshBal();renderLedger();renderStore();

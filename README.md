@@ -19,7 +19,7 @@ Isla Skills started at the IslandDAO V5 house in Florianópolis. Coco is a robot
 
 ## What's real today
 
-- Payments are real **USDC** transfers on **Solana devnet** (SOL also works), approved in the user's wallet (Phantom or Brave Wallet) and verifiable on Solana Explorer.
+- Payments are real **USDC** transfers on **Solana devnet** (SOL also works), approved in the user's wallet (Phantom, Solflare, Backpack or Brave Wallet) and verifiable on Solana Explorer.
 - Votes, new skills and closed rounds are saved on **Solana devnet** as memos signed by the voter's wallet, so everyone sees the same board. One wallet, one vote (the latest vote counts).
 - The robot is a simulation in the browser.
 - Without a wallet connected, the page runs in simulated mode.
@@ -38,7 +38,7 @@ cd isla-skills
 npx serve .
 ```
 
-Then open the local address in Chrome or Brave with Phantom installed and set to **Solana Devnet**. Wallets don't connect on `file://` pages, so use a local server.
+Then open the local address in Chrome or Brave with a Solana wallet (Phantom, Solflare or Backpack) set to **Solana Devnet**. Wallets don't connect on `file://` pages, so use a local server.
 
 You need a little devnet SOL for network fees (use the **Get devnet SOL** button or https://faucet.solana.com) and devnet USDC to pay for skills (https://faucet.circle.com, choose Solana Devnet).
 

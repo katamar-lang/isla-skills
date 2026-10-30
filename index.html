@@ -230,16 +230,22 @@ const short=a=>a?a.slice(0,4)+"…"+a.slice(-4):"—";
 const W=window.solanaWeb3;
 const newAddr=()=>W?W.Keypair.generate().publicKey.toBase58():fake(44);
 const EXPLORER=s=>`https://explorer.solana.com/tx/${s}?cluster=devnet`;
-const FEE_WALLET=newAddr(); // community treasury
-
-let skills=[
- {id:1,name:"Serve coffee",desc:"Makes and delivers coffee to the co-working tables.",price:0.002,dev:"ana",wallet:newAddr(),installed:true,runs:0,earned:0},
- {id:2,name:"Beach cleanup",desc:"Picks up plastic and glass on the beach in front of the house.",price:0.003,dev:"lucas",wallet:newAddr(),installed:false,runs:0,earned:0},
- {id:3,name:"Visitor guide",desc:"Welcomes new attendees and walks them to their room.",price:0.002,dev:"mariana",wallet:newAddr(),installed:false,runs:0,earned:0},
- {id:4,name:"Demo Day timer",desc:"Keeps pitch time and rings at 3 minutes.",price:0.004,dev:"pedro",wallet:newAddr(),installed:false,runs:0,earned:0}
+/* Example skills. Fixed payout addresses so payments always go to the same place. */
+const SEED=[
+ {id:"1",name:"Serve coffee",desc:"Makes and delivers coffee to the co-working tables.",price:0.002,dev:"ana",wallet:"7EnzRoMpgCYThA4MXHx31d3u3kQzGzcNtJSsEZbzWog5",installed:true},
+ {id:"2",name:"Beach cleanup",desc:"Picks up plastic and glass on the beach in front of the house.",price:0.003,dev:"lucas",wallet:"4Zt8pisTsQpRNiv8jcfPKguNLYh25WGxvsNEZy3GFUc4",installed:false},
+ {id:"3",name:"Visitor guide",desc:"Welcomes new attendees and walks them to their room.",price:0.002,dev:"mariana",wallet:"6baT8qi1o2wTNPDfrXDUtyiFyP66pwNra9VLPKBV25yk",installed:false},
+ {id:"4",name:"Demo Day timer",desc:"Keeps pitch time and rings at 3 minutes.",price:0.004,dev:"pedro",wallet:"D2kBeezt5apTAKengXQRuZtsjao1bDCgXSYzBscpR88s",installed:false}
 ];
-let votes={2:5,3:3,4:2},voters={2:["dean","sol","mia","ravi","jo"],3:["leo","kim","tom"],4:["ava","max"]};
-let voted=false,round=1,nextId=5,taskIdx=0,busy=false,auto=false;
+let skills=SEED.map(x=>({...x,runs:0,earned:0}));
+// Example votes, only used when the page can't reach Solana (simulated mode)
+let votes={"2":5,"3":3,"4":2},voters={"2":["dean","sol","mia","ravi","jo"],"3":["leo","kim","tom"],"4":["ava","max"]};
+let voted=false,myVote=null,round=1,nextId=5,taskIdx=0,busy=false,auto=false;
+/* The community board lives on Solana devnet: every vote, new skill and closed round is a
+   memo signed by a wallet, sent with a 0-SOL transfer to BOARD so it can be listed later. */
+const BOARD="Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu";
+const MEMO_PROGRAM="MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr", TAG="isla:v1:";
+let boardMode=false,boardCache=new Map(),boardLoading=false,boardLink=null;
 let txs=[],totals={paid:0,runs:0};
 
 /* ---------- USDC on devnet (Circle) without extra libraries ---------- */
@@ -301,6 +307,7 @@ async function initNetwork(){
       netOk=true;
     }catch(e){netOk=false}
   }
+  if(netOk){$("voteHint").textContent="Votes are saved on Solana devnet. One wallet, one vote.";loadBoard();setInterval(loadBoard,20000)}
   if(!netOk)$("walletHint").textContent="Can't reach Solana devnet from this browser, so payments are simulated. In Brave, turn off Shields for this site and reload.";
   setMode();
   showOwner();
@@ -311,6 +318,7 @@ async function initNetwork(){
   }
 }
 function showOwner(){
+  if(boardMode)applyBoard([...boardCache.values()].filter(e=>e.data).sort((a,b)=>a.slot-b.slot||0));
   $("addr").textContent=owner?owner.toBase58():"Not connected";
   $("connect").textContent=owner?"Disconnect":(wallet()?"Connect "+walletName():"Connect wallet");
 }
@@ -339,6 +347,94 @@ $("airdrop").onclick=async()=>{
   b.disabled=false;
 };
 
+/* ---------- sending a transaction with the connected wallet ---------- */
+async function sendTx(t){
+  const bh=await conn.getLatestBlockhash();
+  t.feePayer=owner;t.recentBlockhash=bh.blockhash;
+  const w=wallet();let sig;
+  if(w.signAndSendTransaction){
+    sig=(await w.signAndSendTransaction(t)).signature;
+  }else{
+    const signed=await w.signTransaction(t);
+    sig=await conn.sendRawTransaction(signed.serialize());
+  }
+  await conn.confirmTransaction({signature:sig,blockhash:bh.blockhash,lastValidBlockHeight:bh.lastValidBlockHeight},"confirmed");
+  return sig;
+}
+
+/* ---------- community board on Solana ---------- */
+function parseMemo(m){
+  const i=(m||"").indexOf(TAG);if(i<0)return null;
+  let txt=m.slice(i+TAG.length);const j=txt.lastIndexOf("}");if(j<0)return null;
+  try{const d=JSON.parse(txt.slice(0,j+1));return d&&typeof d==="object"?d:null}catch(e){return null}
+}
+const okStr=(v,max)=>typeof v==="string"&&v.trim().length>0&&v.length<=max;
+function validPk(a){try{return typeof a==="string"&&!!new W.PublicKey(a)}catch(e){return false}}
+async function loadBoard(){
+  if(!netOk||boardLoading)return;boardLoading=true;
+  try{
+    const sigs=await conn.getSignaturesForAddress(pk(BOARD),{limit:500});
+    const fresh=sigs.filter(x=>!x.err&&x.memo&&x.memo.includes(TAG)&&!boardCache.has(x.signature));
+    for(let i=0;i<fresh.length;i+=40){
+      const part=fresh.slice(i,i+40);
+      const res=await conn.getTransactions(part.map(x=>x.signature),{maxSupportedTransactionVersion:0,commitment:"confirmed"});
+      res.forEach((r,k)=>{
+        if(!r)return;const m=r.transaction.message;const keys=m.staticAccountKeys||m.accountKeys;
+        boardCache.set(part[k].signature,{sig:part[k].signature,slot:part[k].slot,time:part[k].blockTime||0,signer:keys[0].toBase58(),data:parseMemo(part[k].memo)});
+      });
+    }
+    const order=new Map(sigs.map((x,i)=>[x.signature,i]));
+    const evts=[...boardCache.values()].filter(e=>e.data&&order.has(e.sig)).sort((a,b)=>order.get(b.sig)-order.get(a.sig));
+    applyBoard(evts);boardMode=true;
+  }catch(e){console.error("Board load failed",e)}
+  boardLoading=false;
+}
+function applyBoard(evts){
+  const prev={};skills.forEach(x=>prev[x.id]={runs:x.runs,earned:x.earned});
+  const sk=SEED.map(x=>({...x}));let r=1,ballots={};
+  const tally=()=>{const t={};Object.values(ballots).forEach(id=>t[id]=(t[id]||0)+1);return t};
+  for(const e of evts){
+    const d=e.data;
+    if(d.t==="skill"){
+      const price=Number(d.p);
+      if(!okStr(d.n,40)||!(price>=0.002&&price<=1)||!validPk(d.w))continue;
+      const id="c"+e.sig.slice(0,10);
+      if(!sk.some(x=>x.id===id))sk.push({id,name:d.n.trim(),desc:okStr(d.d,80)?d.d.trim():"New skill from the community.",price,dev:okStr(d.dev,20)?d.dev.trim().toLowerCase():short(e.signer),wallet:d.w,installed:false,chainSig:e.sig});
+    }else if(d.t==="vote"&&d.r===r){
+      const target=sk.find(x=>x.id===String(d.s)&&!x.installed);
+      if(target)ballots[e.signer]=target.id; // one wallet, one vote: the latest one counts
+    }else if(d.t==="close"&&d.r===r){
+      const t=tally(),cands=sk.filter(x=>!x.installed);
+      if(!cands.length||!Object.keys(t).length)continue;
+      const win=cands.reduce((a,x)=>(t[x.id]||0)>(t[a.id]||0)?x:a,cands[0]);
+      win.installed=true;r++;ballots={};
+    }
+  }
+  skills=sk.map(x=>({...x,runs:prev[x.id]?.runs||0,earned:prev[x.id]?.earned||0}));
+  round=r;votes=tally();voters={};
+  const me=owner?owner.toBase58():null;
+  Object.entries(ballots).forEach(([w,id])=>(voters[id]=voters[id]||[]).push(w===me?"you":short(w)));
+  myVote=me?ballots[me]||null:null;voted=!!myVote;
+  renderAll();
+}
+async function postBoard(data,pending){
+  if(!live){$("status").textContent="Connect your wallet to take part. Votes and skills are saved on Solana devnet.";return null}
+  const t=new W.Transaction().add(
+    new W.TransactionInstruction({programId:pk(MEMO_PROGRAM),keys:[{pubkey:owner,isSigner:true,isWritable:false}],data:Buffer.from(TAG+JSON.stringify(data),"utf8")}),
+    W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(BOARD),lamports:0})
+  );
+  $("status").textContent=pending;
+  try{
+    const sig=await sendTx(t);boardLink=sig;
+    await loadBoard();return sig;
+  }catch(e){
+    const m=String(e&&e.message||e);console.error("Board write failed",e);
+    $("status").textContent=/reject|denied|cancel/i.test(m)?"Cancelled in "+walletName()+".":/insufficient|no record of a prior credit/i.test(m)?"You need a little devnet SOL for the network fee. Use Get devnet SOL.":"Couldn't save on Solana: "+m.slice(0,140);
+    return null;
+  }
+}
+const txLink=(sig,label)=>`<a href="${EXPLORER(sig)}" target="_blank" rel="noopener" style="color:var(--accent)">${label}</a>`;
+
 /* ---------- vote ---------- */
 function candidates(){return skills.filter(s=>!s.installed)}
 function renderVote(){
@@ -353,19 +449,38 @@ function renderVote(){
       <div class="vbar"><i style="width:${v/total*100}%"></i></div>
       <div class="row" style="justify-content:space-between">
         <div class="voters">${(voters[s.id]||[]).slice(-6).map(n=>`<span class="av">${esc(n)}</span>`).join("")}</div>
-        <button data-vote="${s.id}" ${voted?"disabled":""}>Vote</button>
+        <button data-vote="${s.id}" ${voted?"disabled":""}>${myVote===s.id?"Your vote":"Vote"}</button>
       </div>
     </div>`}).join("");
-  document.querySelectorAll("[data-vote]").forEach(b=>b.onclick=()=>{
-    const id=+b.dataset.vote;votes[id]=(votes[id]||0)+1;(voters[id]=voters[id]||[]).push("you");voted=true;
+  document.querySelectorAll("[data-vote]").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.vote;
+    if(boardMode){
+      b.disabled=true;
+      const sig=await postBoard({t:"vote",r:round,s:id},`Approve your vote in ${walletName()}. It is saved on Solana devnet.`);
+      if(sig){$("voteHint").innerHTML=`Vote saved on Solana. ${txLink(sig,"See it on Explorer")}`;$("status").textContent="Vote saved. One wallet, one vote."}
+      else b.disabled=false;
+      return;
+    }
+    votes[id]=(votes[id]||0)+1;(voters[id]=voters[id]||[]).push("you");voted=true;myVote=id;
     $("voteHint").textContent="Vote counted. Close the vote to install the winner.";renderVote();
   });
 }
-$("closeVote").onclick=()=>{
+$("closeVote").onclick=async()=>{
   const c=candidates();if(!c.length)return;
+  if(boardMode){
+    if(!Object.values(votes).some(v=>v>0)){$("status").textContent="No votes yet in this round.";return}
+    const before=new Set(installed().map(x=>x.id));
+    const sig=await postBoard({t:"close",r:round},`Approve closing round ${round} in ${walletName()}.`);
+    if(sig){
+      const win=installed().find(x=>!before.has(x.id));
+      $("voteHint").innerHTML=`${win?`Installed “${esc(win.name)}”.`:"Round closed."} ${txLink(sig,"See it on Explorer")}`;
+      if(win)$("status").textContent=`Learned a new skill: ${win.name}`;
+    }
+    return;
+  }
   const win=c.reduce((a,s)=>(votes[s.id]||0)>(votes[a.id]||0)?s:a,c[0]);
   win.installed=true;delete votes[win.id];delete voters[win.id];
-  round++;voted=false;$("voteHint").textContent=`Installed “${win.name}”. New round open.`;
+  round++;voted=false;myVote=null;$("voteHint").textContent=`Installed “${win.name}”. New round open.`;
   $("status").textContent=`Learned a new skill: ${win.name}`;
   renderAll();
 };
@@ -402,17 +517,7 @@ async function pay(s){
         t.add(W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(s.wallet),lamports:Math.round(devAmt*1e9)}));
       }
       $("status").textContent=`Approve the payment in ${walletName()}: ${devAmt.toFixed(4)} ${cur} to ${s.dev}`;
-      const bh=await conn.getLatestBlockhash();
-      t.feePayer=owner;t.recentBlockhash=bh.blockhash;
-      const w=wallet();let sig;
-      if(w.signAndSendTransaction){
-        sig=(await w.signAndSendTransaction(t)).signature;
-      }else{
-        const signed=await w.signTransaction(t);
-        sig=await conn.sendRawTransaction(signed.serialize());
-      }
-      tx.sig=sig;
-      await conn.confirmTransaction({signature:sig,blockhash:bh.blockhash,lastValidBlockHeight:bh.lastValidBlockHeight},"confirmed");
+      tx.sig=await sendTx(t);
     }else{
       if(simBal<s.price)throw new Error("empty");
       await new Promise(r=>setTimeout(r,600));simBal-=s.price;tx.sig=fake(88);
@@ -453,13 +558,22 @@ function renderLedger(){
      <span class="sig">${t.sig?(t.live?`<a href="${EXPLORER(t.sig)}" target="_blank" rel="noopener">${t.sig}</a>`:t.sig+" (simulated)"):"…"}</span>
    </div>`).join("");
 }
-$("pub").addEventListener("submit",e=>{
+$("pub").addEventListener("submit",async e=>{
   e.preventDefault();
-  const price=parseFloat($("fPrice").value);if(!(price>=0.002))return;
+  const price=parseFloat($("fPrice").value);if(!(price>=0.002&&price<=1))return;
   let w=$("fWallet").value.trim();
   if(w&&W){try{new W.PublicKey(w)}catch(err){$("fWallet").setCustomValidity("Not a valid Solana address");$("fWallet").reportValidity();return}}
   $("fWallet").setCustomValidity("");
-  const s={id:nextId++,name:$("fName").value.trim(),desc:$("fDesc").value.trim()||"New skill from the community.",price,dev:$("fDev").value.trim().toLowerCase(),wallet:w||newAddr(),installed:false,runs:0,earned:0};
+  if(boardMode){
+    if(!live){$("status").textContent="Connect your wallet to publish. New skills are saved on Solana devnet.";return}
+    const data={t:"skill",n:$("fName").value.trim().slice(0,40),d:$("fDesc").value.trim().slice(0,80),p:price,dev:$("fDev").value.trim().toLowerCase().slice(0,20),w:w||owner.toBase58()};
+    const btn=e.target.querySelector("button");btn.disabled=true;
+    const sig=await postBoard(data,`Approve publishing “${data.n}” in ${walletName()}.`);
+    btn.disabled=false;
+    if(sig){e.target.reset();$("status").innerHTML=`Published. It's in the next vote. ${txLink(sig,"See it on Explorer")}`}
+    return;
+  }
+  const s={id:String(nextId++),name:$("fName").value.trim(),desc:$("fDesc").value.trim()||"New skill from the community.",price,dev:$("fDev").value.trim().toLowerCase(),wallet:w||newAddr(),installed:false,runs:0,earned:0};
   skills.push(s);votes[s.id]=0;voters[s.id]=[];e.target.reset();renderAll();
 });
 $("fWallet").addEventListener("input",()=>$("fWallet").setCustomValidity(""));

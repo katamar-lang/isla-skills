@@ -161,6 +161,7 @@ form .full{grid-column:1/-1}
       <div class="row small" role="radiogroup" aria-label="Pay in">
         <span class="lbl">Pay in</span>
         <button class="cur on" id="curUSDC" data-cur="USDC" role="radio" aria-checked="true">USDC</button>
+        <button class="cur" id="curX402" data-cur="X402" role="radio" aria-checked="false" title="Gasless USDC through the Ultravioleta DAO x402 facilitator">USDC · x402</button>
         <button class="cur" id="curSOL" data-cur="SOL" role="radio" aria-checked="false">SOL</button>
       </div>
       <p class="small muted" id="walletHint" style="margin:0">Connect Phantom, Solflare or Backpack on Solana devnet to make real payments. Your wallet asks you to approve each one.</p>
@@ -275,12 +276,57 @@ function transferCheckedIx(src,dst,ownerPk,amount){
 async function usdcBalance(ownerPk){
   try{const r=await conn.getTokenAccountBalance(ataOf(ownerPk));return Number(r.value.uiAmount||0)}catch(e){return 0}
 }
+/* ---------- x402: gasless USDC through the Ultravioleta DAO facilitator ----------
+   The wallet only signs. The facilitator checks the payment, adds its signature as
+   fee payer, and sends it to Solana, so the payer needs no SOL for fees. */
+const FACILITATOR="https://facilitator.ultravioletadao.xyz", X402_NETWORK="solana-devnet";
+const COMPUTE_BUDGET="ComputeBudget111111111111111111111111111111";
+let facFeePayer=null;
+async function loadFacilitator(){
+  if(facFeePayer)return facFeePayer;
+  const r=await withTimeout(fetch(FACILITATOR+"/supported"),8000);
+  const d=await r.json();const kinds=Array.isArray(d.kinds)?d.kinds:Array.isArray(d)?d:[];
+  const k=kinds.find(x=>x.network===X402_NETWORK&&x.scheme==="exact"&&x.x402Version===1);
+  if(!k||!k.extra||!k.extra.feePayer)throw new Error("X402_UNSUPPORTED");
+  facFeePayer=k.extra.feePayer;return facFeePayer;
+}
+function cuLimitIx(units){const d=new Uint8Array(5);d[0]=2;new DataView(d.buffer).setUint32(1,units,true);return new W.TransactionInstruction({programId:pk(COMPUTE_BUDGET),keys:[],data:Buffer.from(d)})}
+function cuPriceIx(micro){const d=new Uint8Array(9);d[0]=3;new DataView(d.buffer).setBigUint64(1,BigInt(micro),true);return new W.TransactionInstruction({programId:pk(COMPUTE_BUDGET),keys:[],data:Buffer.from(d)})}
+async function facPost(path,body){
+  const r=await withTimeout(fetch(FACILITATOR+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),45000);
+  let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new Error("X402: "+((j&&(j.error||j.invalidReason||j.errorReason))||("HTTP "+r.status)));
+  return j||{};
+}
+async function payX402(s,units){
+  const feePayer=pk(await loadFacilitator());
+  const dev=pk(s.wallet),src=ataOf(owner),dst=ataOf(dev);
+  const t=new W.Transaction().add(cuLimitIx(60000),cuPriceIx(1));
+  if(!(await conn.getAccountInfo(dst)))t.add(createAtaIdempotentIx(owner,dst,dev)); // first payment to this developer opens their USDC account
+  t.add(transferCheckedIx(src,dst,owner,units));
+  t.feePayer=feePayer;t.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
+  $("status").textContent=`Approve the payment in ${walletName()}. The x402 facilitator pays the network fee.`;
+  const signed=await wallet().signTransaction(t);
+  const b64=signed.serialize({requireAllSignatures:false,verifySignatures:false}).toString("base64");
+  const reqs={scheme:"exact",network:X402_NETWORK,maxAmountRequired:String(units),resource:location.origin+"/skills/"+encodeURIComponent(s.id),
+    description:"Isla Skills: "+s.name,mimeType:"application/json",payTo:s.wallet,maxTimeoutSeconds:60,asset:USDC_MINT,extra:{feePayer:feePayer.toBase58()}};
+  const body={x402Version:1,paymentPayload:{x402Version:1,scheme:"exact",network:X402_NETWORK,payload:{transaction:b64}},paymentRequirements:reqs};
+  $("status").textContent="Facilitator is checking the payment…";
+  const v=await facPost("/verify",body);
+  if(v.isValid===false)throw new Error("X402: "+(v.invalidReason||"payment not valid"));
+  $("status").textContent="Facilitator is sending the payment to Solana…";
+  const st=await facPost("/settle",body);
+  if(!st.success)throw new Error("X402: "+(st.errorReason||"settlement failed"));
+  return st.transaction||st.transactionHash||st.txHash;
+}
+
 function setCur(c){
   cur=c;
-  ["USDC","SOL"].forEach(k=>{const b=$("cur"+k);b.classList.toggle("on",k===c);b.setAttribute("aria-checked",k===c)});
+  ["USDC","X402","SOL"].forEach(k=>{const b=$("cur"+k);b.classList.toggle("on",k===c);b.setAttribute("aria-checked",k===c)});
   setMode();
 }
-$("curUSDC").onclick=()=>setCur("USDC");$("curSOL").onclick=()=>setCur("SOL");
+$("curUSDC").onclick=()=>setCur("USDC");$("curX402").onclick=()=>setCur("X402");$("curSOL").onclick=()=>setCur("SOL");
+const asset=()=>cur==="SOL"?"SOL":"USDC";
 
 /* ---------- wallet / mode (Phantom, Brave Wallet or any Solana wallet on devnet) ---------- */
 let live=false,netOk=false,conn=null,owner=null,simBal=5;
@@ -309,8 +355,8 @@ function setMode(){
   live=netOk&&!!owner;
   $("modeDot").classList.toggle("live",live);
   $("modeTxt").textContent=live?"Live · Solana devnet":netOk?"Devnet ready · connect wallet":"Simulated payments";
-  $("unit").textContent=live?`${cur} on devnet`:`${cur} (simulated)`;
-  $("feeBal").hidden=!(live&&cur==="USDC");
+  $("unit").textContent=live?`${asset()} on devnet`:`${asset()} (simulated)`;
+  $("feeBal").hidden=!(live&&cur!=="SOL");
   $("fundRow").hidden=!live;
   refreshBal();
 }
@@ -351,9 +397,9 @@ async function refreshBal(){
   if(!live)return $("bal").textContent=simBal.toFixed(4);
   try{
     const sol=(await conn.getBalance(owner))/1e9;
-    if(cur==="USDC"){
+    if(cur!=="SOL"){
       $("bal").textContent=(await usdcBalance(owner)).toFixed(4);
-      $("feeBal").textContent=` · ${sol.toFixed(4)} SOL for network fees`;
+      $("feeBal").textContent=cur==="X402"?" · network fees paid by the x402 facilitator":` · ${sol.toFixed(4)} SOL for network fees`;
     }else $("bal").textContent=sol.toFixed(4);
   }catch(e){}
 }
@@ -526,7 +572,10 @@ async function pay(s){
   try{
     if(live){
       const t=new W.Transaction();
-      if(cur==="USDC"){
+      if(cur==="X402"){
+        if(await usdcBalance(owner)<devAmt)throw new Error("NO_USDC");
+        tx.sig=await payX402(s,Math.round(devAmt*10**USDC_DECIMALS));
+      }else if(cur==="USDC"){
         const have=await usdcBalance(owner);
         if(have<devAmt)throw new Error("NO_USDC");
         const dev=pk(s.wallet),src=ataOf(owner),dst=ataOf(dev);
@@ -534,19 +583,21 @@ async function pay(s){
       }else{
         t.add(W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(s.wallet),lamports:Math.round(devAmt*1e9)}));
       }
-      $("status").textContent=`Approve the payment in ${walletName()}: ${devAmt.toFixed(4)} ${cur} to ${s.dev}`;
-      tx.sig=await sendTx(t);
+      if(cur!=="X402"){
+        $("status").textContent=`Approve the payment in ${walletName()}: ${devAmt.toFixed(4)} ${asset()} to ${s.dev}`;
+        tx.sig=await sendTx(t);
+      }
     }else{
       if(simBal<s.price)throw new Error("empty");
       await new Promise(r=>setTimeout(r,600));simBal-=s.price;tx.sig=fake(88);
     }
-    tx.status="confirmed";tx.cur=live?cur:"USDC";s.runs++;s.earned+=devAmt;totals.paid+=devAmt;totals.runs++;
-    $("status").textContent=`Done. Paid ${devAmt.toFixed(4)} ${live?cur:"USDC"} to ${s.dev} for “${s.name}”. 5% stays with the community.`;
+    tx.status="confirmed";tx.cur=!live?"USDC":cur==="X402"?"USDC · x402":cur;s.runs++;s.earned+=devAmt;totals.paid+=devAmt;totals.runs++;
+    $("status").textContent=`Done. Paid ${devAmt.toFixed(4)} ${live?asset():"USDC"}${live&&cur==="X402"?" through x402, no network fee for you,":""} to ${s.dev} for “${s.name}”. 5% stays with the community.`;
   }catch(e){
     tx.status="failed";auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false");
     const m=String(e&&e.message||e);
     console.error("Payment error",e);
-    $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
+    $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":m==="X402_UNSUPPORTED"?"The x402 facilitator isn't offering Solana devnet right now. Switch Pay in to USDC.":/^X402/.test(m)?m.replace(/^X402:\s*/,"x402 facilitator said: ").slice(0,180)+" Try Pay in USDC instead.":/signTransaction|not a function/i.test(m)?walletName()+" can't sign for x402 here. Switch Pay in to USDC.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
   }
   busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
   refreshBal();renderLedger();renderStore();

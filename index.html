@@ -95,6 +95,7 @@ form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 form .full{grid-column:1/-1}
 .cur{padding:4px 12px;font-size:12.5px}
 .cur.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.openin{display:inline-block;padding:6px 12px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none;margin:4px 6px 0 0}
 .pitch{font-family:var(--display);font-weight:600;font-size:clamp(18px,2.4vw,24px);line-height:1.25;margin:0;text-wrap:balance}
 .how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .how div{font-size:13.5px;color:var(--muted)}
@@ -122,7 +123,7 @@ form .full{grid-column:1/-1}
       <div id="vote" style="display:flex;flex-direction:column;gap:10px"></div>
       <div class="row">
         <button class="go" id="closeVote">Close vote &amp; install</button>
-        <span class="small muted" id="voteHint">You can vote once per round.</span>
+        <span class="small muted" id="voteHint" aria-live="polite">You can vote once per round.</span>
       </div>
       <a class="small" id="boardLink" href="https://explorer.solana.com/address/Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu?cluster=devnet" target="_blank" rel="noopener" style="color:var(--accent)" hidden>See all votes on Solana ↗</a>
     </section>
@@ -165,6 +166,7 @@ form .full{grid-column:1/-1}
         <button class="cur" id="curSOL" data-cur="SOL" role="radio" aria-checked="false">SOL</button>
       </div>
       <p class="small muted" id="walletHint" style="margin:0">Connect Phantom, Solflare or Backpack on Solana devnet to make real payments. Your wallet asks you to approve each one.</p>
+      <div class="row small" id="openIn" hidden></div>
 
       <div>
         <span class="lbl">Installed skills</span>
@@ -206,6 +208,7 @@ form .full{grid-column:1/-1}
         <input id="fWallet" class="full" placeholder="Payout wallet (optional, devnet address)" maxlength="44">
         <button class="go full" type="submit">Publish skill</button>
       </form>
+      <p class="small" id="pubMsg" aria-live="polite" style="margin:0"></p>
     </section>
   </div>
 
@@ -368,6 +371,7 @@ async function initNetwork(){
       netOk=true;
     }catch(e){netOk=false}
   }
+  setTimeout(()=>{if(!detectWallets().length){$("openIn").innerHTML=`<span class="muted">On your phone? </span>${openInLinks()}`;$("openIn").hidden=false}},1500);
   if(netOk){$("voteHint").textContent="Votes are saved on Solana devnet. One wallet, one vote.";$("boardLink").hidden=false;loadBoard();setInterval(loadBoard,20000)}
   if(!netOk)$("walletHint").textContent="Can't reach Solana devnet from this browser, so payments are simulated. In Brave, turn off Shields for this site and reload.";
   setMode();
@@ -385,13 +389,25 @@ function showOwner(){
   $("addr").textContent=owner?owner.toBase58():"Not connected";
   $("connect").textContent=owner?"Disconnect":(wallet()?"Connect "+walletName():"Connect wallet");
 }
-$("connect").onclick=async()=>{
+/* Messages show where the person tapped, and in Coco's status box. */
+function say(where,html){$("status").innerHTML=html;if(where&&$(where))$(where).innerHTML=html}
+/* Phone browsers have no wallet: these links reopen this page inside the wallet app. */
+function openInLinks(){
+  const u=encodeURIComponent(location.origin+location.pathname),r=encodeURIComponent(location.origin);
+  return `<a class="openin" href="https://phantom.app/ul/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Phantom</a><a class="openin" href="https://solflare.com/ul/v1/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Solflare</a>`;
+}
+async function connectWallet(where){
   const p=wallet();
-  if(owner){try{await p.disconnect()}catch(e){}owner=null;showOwner();return setMode()}
-  if(!p){$("status").textContent="No Solana wallet found. On your phone, open this link inside your wallet app's browser. On a computer, install Phantom, Solflare or Backpack, then reload.";return}
-  if(!netOk){$("status").textContent="Can't reach Solana devnet. In Brave, turn off Shields for this site and reload.";return}
-  try{const r=await p.connect();owner=pubkeyFrom(r,p);if(!owner)throw new Error("no key");showOwner();setMode();$("status").textContent=walletName()+" connected. Make sure it is set to Solana Devnet."}
-  catch(e){$("status").textContent="Connection cancelled in "+walletName()+"."}
+  if(!p){say(where,`No Solana wallet in this browser. Open this page inside your wallet app:<br>${openInLinks()}`);return false}
+  if(!netOk){say(where,"Can't reach Solana devnet. In Brave, turn off Shields for this site and reload.");return false}
+  try{
+    const r=await p.connect();owner=pubkeyFrom(r,p);if(!owner)throw new Error("no key");
+    showOwner();setMode();say(where,`${esc(walletName())} connected. Make sure it's set to Solana <b>Devnet</b>.`);return true;
+  }catch(e){say(where,`Connection cancelled in ${esc(walletName())}.`);return false}
+}
+$("connect").onclick=async()=>{
+  if(owner){try{await wallet().disconnect()}catch(e){}owner=null;showOwner();return setMode()}
+  await connectWallet(null);
 };
 async function refreshBal(){
   if(!live)return $("bal").textContent=simBal.toFixed(4);
@@ -481,19 +497,22 @@ function applyBoard(evts){
   myVote=me?ballots[me]||null:null;voted=!!myVote;
   renderAll();
 }
-async function postBoard(data,pending){
-  if(!live){$("status").textContent="Connect your wallet to take part. Votes and skills are saved on Solana devnet.";return null}
+async function postBoard(data,pending,where){
+  if(!live&&!(await connectWallet(where)))return null;
   const t=new W.Transaction().add(
     new W.TransactionInstruction({programId:pk(MEMO_PROGRAM),keys:[{pubkey:owner,isSigner:true,isWritable:false}],data:Buffer.from(TAG+JSON.stringify(data),"utf8")}),
     W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(BOARD),lamports:0})
   );
-  $("status").textContent=pending;
+  say(where,esc(pending));
   try{
     const sig=await sendTx(t);boardLink=sig;
     await loadBoard();return sig;
   }catch(e){
     const m=String(e&&e.message||e);console.error("Board write failed",e);
-    $("status").textContent=/reject|denied|cancel/i.test(m)?"Cancelled in "+walletName()+".":/insufficient|no record of a prior credit/i.test(m)?"You need a little devnet SOL for the network fee. Use Get devnet SOL.":"Couldn't save on Solana: "+m.slice(0,140);
+    say(where,/reject|denied|cancel/i.test(m)?`Cancelled in ${esc(walletName())}.`
+      :/blockhash|not found/i.test(m)?`Your wallet seems to be on Mainnet. Switch ${esc(walletName())} to <b>Devnet</b> and try again.`
+      :/insufficient|no record of a prior credit|debit an account/i.test(m)?`You need a little free devnet SOL for the network fee. Tap <b>Get devnet SOL</b> above, or use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a>.`
+      :"Couldn't save on Solana: "+esc(m.slice(0,140)));
     return null;
   }
 }
@@ -520,7 +539,7 @@ function renderVote(){
     const id=b.dataset.vote;
     if(boardMode){
       b.disabled=true;
-      const sig=await postBoard({t:"vote",r:round,s:id},`Approve your vote in ${walletName()}. It is saved on Solana devnet.`);
+      const sig=await postBoard({t:"vote",r:round,s:id},`Approve your vote in ${walletName()}. It is saved on Solana devnet.`,"voteHint");
       if(sig){$("voteHint").innerHTML=`Vote saved on Solana. ${txLink(sig,"See it on Explorer")}`;$("status").textContent="Vote saved. One wallet, one vote."}
       else b.disabled=false;
       return;
@@ -534,7 +553,7 @@ $("closeVote").onclick=async()=>{
   if(boardMode){
     if(!Object.values(votes).some(v=>v>0)){$("status").textContent="No votes yet in this round.";return}
     const before=new Set(installed().map(x=>x.id));
-    const sig=await postBoard({t:"close",r:round},`Approve closing round ${round} in ${walletName()}.`);
+    const sig=await postBoard({t:"close",r:round},`Approve closing round ${round} in ${walletName()}.`,"voteHint");
     if(sig){
       const win=installed().find(x=>!before.has(x.id));
       $("voteHint").innerHTML=`${win?`Installed “${esc(win.name)}”.`:"Round closed."} ${txLink(sig,"See it on Explorer")}`;
@@ -634,12 +653,12 @@ $("pub").addEventListener("submit",async e=>{
   if(w&&W){try{new W.PublicKey(w)}catch(err){$("fWallet").setCustomValidity("Not a valid Solana address");$("fWallet").reportValidity();return}}
   $("fWallet").setCustomValidity("");
   if(boardMode){
-    if(!live){$("status").textContent="Connect your wallet to publish. New skills are saved on Solana devnet.";return}
+    if(!live&&!(await connectWallet("pubMsg")))return;
     const data={t:"skill",n:$("fName").value.trim().slice(0,40),d:$("fDesc").value.trim().slice(0,80),p:price,dev:$("fDev").value.trim().toLowerCase().slice(0,20),w:w||owner.toBase58()};
     const btn=e.target.querySelector("button");btn.disabled=true;
-    const sig=await postBoard(data,`Approve publishing “${data.n}” in ${walletName()}.`);
+    const sig=await postBoard(data,`Approve publishing “${data.n}” in ${walletName()}.`,"pubMsg");
     btn.disabled=false;
-    if(sig){e.target.reset();$("status").innerHTML=`Published. It's in the next vote. ${txLink(sig,"See it on Explorer")}`}
+    if(sig){e.target.reset();say("pubMsg",`Published. It's in the next vote. ${txLink(sig,"See it on Explorer")}`)}
     return;
   }
   const s={id:String(nextId++),name:$("fName").value.trim(),desc:$("fDesc").value.trim()||"New skill from the community.",price,dev:$("fDev").value.trim().toLowerCase(),wallet:w||newAddr(),installed:false,runs:0,earned:0};

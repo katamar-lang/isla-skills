@@ -124,6 +124,7 @@ form .full{grid-column:1/-1}
         <button class="go" id="closeVote">Close vote &amp; install</button>
         <span class="small muted" id="voteHint">You can vote once per round.</span>
       </div>
+      <a class="small" id="boardLink" href="https://explorer.solana.com/address/Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu?cluster=devnet" target="_blank" rel="noopener" style="color:var(--accent)" hidden>See all votes on Solana ↗</a>
     </section>
 
     <!-- ROBOT -->
@@ -307,7 +308,7 @@ async function initNetwork(){
       netOk=true;
     }catch(e){netOk=false}
   }
-  if(netOk){$("voteHint").textContent="Votes are saved on Solana devnet. One wallet, one vote.";loadBoard();setInterval(loadBoard,20000)}
+  if(netOk){$("voteHint").textContent="Votes are saved on Solana devnet. One wallet, one vote.";$("boardLink").hidden=false;loadBoard();setInterval(loadBoard,20000)}
   if(!netOk)$("walletHint").textContent="Can't reach Solana devnet from this browser, so payments are simulated. In Brave, turn off Shields for this site and reload.";
   setMode();
   showOwner();

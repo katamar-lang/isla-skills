@@ -18,7 +18,7 @@ Pitch: "Robots are learning new skills through software, but there's no way to p
 
 **Nothing on the page may be false.** There is no community vote and no 5% community share anymore (both removed Oct 31); 100% of each price goes to the skill's maker.
 
-- **Hosting moved to Vercel (Nov 1, 2026):** Netlify's free credits are spent until Nov 20 (after the Nov 11 deadline) and the owner can't pay for any service. Vercel Hobby (free, no card) + Upstash Redis (free) via Vercel. The old Netlify site https://isla-skills-dao-2b40fb.netlify.app stays up with the previous version. The code still runs on Netlify too.
+- Live demo: https://isla-skills-dao-2b40fb.netlify.app (reviewers: `/review`). **Hosting: Netlify** (the owner's team is on a paid Netlify plan since Nov 1, 2026). The code also runs on Vercel (free) as a fallback: `api/router.mjs` + `vercel.json` + Upstash Redis.
 - **The owner has no money for paid APIs.** Litter Spotter needs an AI key: ask the hackathon organizers for credits, or use a free tier (decision pending).
 - Everything runs on **Solana devnet** (test USDC).
 
@@ -84,9 +84,9 @@ Then top up Coco with devnet USDC from the page ("Top up Coco"), and send the sp
 
 ## Deploying
 
-**Vercel** (current): the Vercel GitHub app deploys every push. `main` → production; other branches → preview URLs (good for testing before merging). If you add a file the site needs, add it to `buildCommand` in `vercel.json`.
+**Netlify** (current): pushing to `main` deploys. `.github/workflows/deploy.yml` runs `npm ci`, copies the site files to `public/` (if you add a file the site needs, add it to the `cp` line) and runs `netlify deploy --prod --functions=netlify/functions` to site `774dae81-dcf7-42e4-b800-fad91c6ba090` (token: repo secret `NETLIFY_AUTH_TOKEN`). There are no branch previews: test locally before merging. Storage = Netlify Blobs (no Redis variables set).
 
-**Netlify** (paused): `.github/workflows/deploy.yml` now runs only by hand (Actions → Run workflow); it runs `npm ci`, copies the site files to `public/` (keep its `cp` line in sync) and deploys with functions to site `774dae81-dcf7-42e4-b800-fad91c6ba090` (token: repo secret `NETLIFY_AUTH_TOKEN`). Each production deploy uses Netlify credits.
+**Vercel** (fallback, not connected): the Vercel GitHub app would deploy every push; keep `buildCommand` in `vercel.json` in sync with the workflow's `cp` line.
 
 Never print or commit tokens or keys.
 
@@ -104,9 +104,8 @@ Never print or commit tokens or keys.
 - **Real devnet test, Nov 1 2026 (from this repo's functions, test wallets, real facilitators): all three work end to end.** Ultravioleta (`https://facilitator.ultravioletadao.xyz`, fee payer `6xNPewUd…`), PayAI (`https://facilitator.payai.network`, fee payer `2wKupLR9…`) and plan B (`local`) each verified and settled a Cleanup Planner payment and a Human Reviewer payment (finalized on devnet, e.g. tx `3fMvf6hU…`). The old `contract_call_failed` did not appear. Paid call times: 1.2–2.9 s (settle 1.2–2.7 s). Litter Spotter (Claude) was not part of this test: no API key here.
 - Confirmations poll `getSignatureStatuses` (`confirm()` in `netlify/lib/solana.mjs`) instead of web3.js websockets, which time out in serverless functions.
 - The public devnet RPC sometimes answers 429 (rate limit). If that shows up on the live site, set `SOLANA_RPC_URL` to a free devnet RPC (e.g. Helius).
-- Function time limit: Vercel `maxDuration` is 30 s in `vercel.json`. The paid Litter Spotter call runs verify ∥ Claude, then settle; measure on the live site (`Server-Timing` header).
-- Vercel config (`vercel.json`, Web-handler exports in `api/router.mjs`) is untested on Vercel itself: no Vercel access from the cloud session. Check the first preview deploy.
-- Vercel protects preview URLs with Vercel login by default: fine for the owner's tests; judges should get the production URL.
+- Function time limit: Netlify synchronous functions have a time limit (check the plan; Vercel fallback: `maxDuration` 30 s). The paid Litter Spotter call runs verify ∥ Claude, then settle; measure on the live site (`Server-Timing` header).
+- The Vercel fallback (`vercel.json`, Web-handler exports in `api/router.mjs`) is untested on Vercel itself.
 - Wallet Standard, Solflare and Backpack were tested only with simulated wallets. Phantom was confirmed with real payments in the earlier version.
 - Coco is shared: anyone can make it spend, up to the daily budget.
 - X hides posts with `.netlify.app` links; a custom domain (e.g. islaskills.xyz) is on the list.

@@ -1,8 +1,8 @@
 name: Deploy to Netlify
 
-# The live site moved to Vercel (Netlify's free credits run out until Nov 20, 2026).
-# Vercel deploys on its own from GitHub. This Netlify deploy now only runs by hand.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:

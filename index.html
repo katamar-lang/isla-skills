@@ -497,8 +497,11 @@ function applyBoard(evts){
   myVote=me?ballots[me]||null:null;voted=!!myVote;
   renderAll();
 }
+const NO_SOL_MSG=()=>`This wallet has no devnet SOL for the network fee. Make sure it's on <b>Devnet</b>, then tap <b>Get devnet SOL</b> above (or use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a>).`;
+async function hasFeeSol(){try{return (await conn.getBalance(owner))>=10000}catch(e){return true}}
 async function postBoard(data,pending,where){
   if(!live&&!(await connectWallet(where)))return null;
+  if(!(await hasFeeSol())){say(where,NO_SOL_MSG());return null}
   const t=new W.Transaction().add(
     new W.TransactionInstruction({programId:pk(MEMO_PROGRAM),keys:[{pubkey:owner,isSigner:true,isWritable:false}],data:Buffer.from(TAG+JSON.stringify(data),"utf8")}),
     W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(BOARD),lamports:0})
@@ -510,6 +513,7 @@ async function postBoard(data,pending,where){
   }catch(e){
     const m=String(e&&e.message||e);console.error("Board write failed",e);
     say(where,/reject|denied|cancel/i.test(m)?`Cancelled in ${esc(walletName())}.`
+      :/expired|block height exceeded/i.test(m)?`The transaction never reached Solana devnet. Usually the wallet is on <b>Mainnet</b> or has no devnet SOL. Switch ${esc(walletName())} to <b>Devnet</b>, tap <b>Get devnet SOL</b>, and try again.`
       :/blockhash|not found/i.test(m)?`Your wallet seems to be on Mainnet. Switch ${esc(walletName())} to <b>Devnet</b> and try again.`
       :/insufficient|no record of a prior credit|debit an account/i.test(m)?`You need a little free devnet SOL for the network fee. Tap <b>Get devnet SOL</b> above, or use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a>.`
       :"Couldn't save on Solana: "+esc(m.slice(0,140)));
@@ -595,11 +599,13 @@ async function pay(s){
         if(await usdcBalance(owner)<devAmt)throw new Error("NO_USDC");
         tx.sig=await payX402(s,Math.round(devAmt*10**USDC_DECIMALS));
       }else if(cur==="USDC"){
+        if(!(await hasFeeSol()))throw new Error("NO_SOL");
         const have=await usdcBalance(owner);
         if(have<devAmt)throw new Error("NO_USDC");
         const dev=pk(s.wallet),src=ataOf(owner),dst=ataOf(dev);
         t.add(createAtaIdempotentIx(owner,dst,dev),transferCheckedIx(src,dst,owner,Math.round(devAmt*10**USDC_DECIMALS)));
       }else{
+        if(!(await hasFeeSol()))throw new Error("NO_SOL");
         t.add(W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(s.wallet),lamports:Math.round(devAmt*1e9)}));
       }
       if(cur!=="X402"){
@@ -616,7 +622,9 @@ async function pay(s){
     tx.status="failed";auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false");
     const m=String(e&&e.message||e);
     console.error("Payment error",e);
-    $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":m==="X402_UNSUPPORTED"?"The x402 facilitator isn't offering Solana devnet right now. Switch Pay in to USDC.":/^X402/.test(m)?m.replace(/^X402:\s*/,"x402 facilitator said: ").slice(0,180)+" Try Pay in USDC instead.":/signTransaction|not a function/i.test(m)?walletName()+" can't sign for x402 here. Switch Pay in to USDC.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
+    if(live&&m==="NO_SOL"){$("status").innerHTML=NO_SOL_MSG()}
+    else if(live&&/expired|block height exceeded/i.test(m)){$("status").innerHTML=`The transaction never reached Solana devnet. Usually the wallet is on <b>Mainnet</b> or has no devnet SOL. Switch ${esc(walletName())} to <b>Devnet</b>, tap <b>Get devnet SOL</b>, and try again.`}
+    else $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":m==="X402_UNSUPPORTED"?"The x402 facilitator isn't offering Solana devnet right now. Switch Pay in to USDC.":/^X402/.test(m)?m.replace(/^X402:\s*/,"x402 facilitator said: ").slice(0,180)+" Try Pay in USDC instead.":/signTransaction|not a function/i.test(m)?walletName()+" can't sign for x402 here. Switch Pay in to USDC.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
   }
   busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
   refreshBal();renderLedger();renderStore();

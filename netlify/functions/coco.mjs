@@ -18,6 +18,7 @@ async function status(req, context) {
   if (k) balance = await usdcUnits(k.publicKey).catch(() => null);
   return json(200, {
     address: k ? k.publicKey.toBase58() : null, usdcUnits: balance,
+    sponsorAddress: sponsorKeypair() ? sponsorKeypair().publicKey.toBase58() : null, // public, so the owner can send it devnet SOL
     budget: { day, limitUnits: COCO_DAILY_BUDGET(), spentUnits: spent },
     photos: { today: photos, limit: PHOTOS_PER_DAY(), yours: mine, perVisitor: PHOTOS_PER_VISITOR() },
     facilitator: isLocal() ? "local (this server, plan B)" : FACILITATOR(),

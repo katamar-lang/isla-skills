@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Isla Skills</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="icon" type="image/png" href="favicon.png">
@@ -20,6 +21,7 @@
   --bg:#0B1813; --panel:#11231C; --ink:#E5EFEA; --muted:#8FA99D; --line:#21392F;
   --accent:#E9B65C; --accent-soft:#2E2914; --accent-ink:#1E1503; --ok:#5BCB9A; --chip:#18302A; --code:#0E1D17; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
 .wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -31,6 +33,7 @@ h1 em{font-style:normal;color:var(--accent)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .dot.live{background:var(--ok)}
 .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.grid.grid2{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
 section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 h2{font-family:var(--display);font-weight:600;font-size:19px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 h2 small{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400}
@@ -102,7 +105,15 @@ form .full{grid-column:1/-1}
 .how div{font-size:13.5px;color:var(--muted)}
 .how b{display:block;color:var(--ink);font-family:var(--display);font-weight:600;font-size:15px}
 .empty{color:var(--muted);font-size:13px;margin:0}
-@media (max-width:1000px){.grid{grid-template-columns:1fr}.how{grid-template-columns:1fr 1fr}}
+.coco{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.steps{grid-column:1/-1;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.steps .ok{color:var(--ok)}.steps .err{color:#C2412D}
+.steps a{color:var(--accent)}
+.meter{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--ok)}
+.meter.full i{background:#C2412D}
+input.amt{width:90px}
+@media (max-width:1000px){.grid,.grid.grid2{grid-template-columns:1fr}.how,.coco{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){.how,form,.wallet{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.bot.work .eye{animation:none}.vbar i{transition:none}}
 </style>
@@ -111,7 +122,7 @@ form .full{grid-column:1/-1}
   <header>
     <div>
       <h1>Isla <em>Skills</em></h1>
-      <p class="lede">The community robot of the IslandDAO house. Developers publish skills, the community votes on what the robot learns, and every time it uses a skill it pays the developer on Solana.</p>
+      <p class="lede">An app store for robot skills. Robots pay on their own, per use, with x402 on Solana. Coco, the community robot of the IslandDAO house, is the first demo: the community votes on what it learns and every use pays whoever taught it.</p>
     </div>
     <div class="mode"><span class="dot" id="modeDot"></span><span id="modeTxt">Checking network…</span></div>
   </header>
@@ -160,13 +171,18 @@ form .full{grid-column:1/-1}
           <a class="small" id="faucetLink" href="https://faucet.circle.com" target="_blank" rel="noopener" style="color:var(--accent)">Get devnet USDC</a>
         </span>
       </div>
-      <div class="row small" role="radiogroup" aria-label="Pay in">
+      <div class="row small" role="radiogroup" aria-label="Who pays">
+        <span class="lbl">Who pays</span>
+        <button class="cur on" id="payerTreasury" role="radio" aria-checked="true" title="Your wallet approves each payment">Treasury (you approve)</button>
+        <button class="cur" id="payerCoco" role="radio" aria-checked="false" title="Coco pays from its own spending wallet with x402, no approval needed">Coco on its own · x402</button>
+      </div>
+      <div class="row small" role="radiogroup" aria-label="Pay in" id="payInRow">
         <span class="lbl">Pay in</span>
         <button class="cur on" id="curUSDC" data-cur="USDC" role="radio" aria-checked="true">USDC</button>
         <button class="cur" id="curX402" data-cur="X402" role="radio" aria-checked="false" title="Gasless USDC through the Ultravioleta DAO x402 facilitator">USDC · x402 (beta)</button>
         <button class="cur" id="curSOL" data-cur="SOL" role="radio" aria-checked="false">SOL</button>
       </div>
-      <p class="small muted" id="walletHint" style="margin:0">Connect Phantom, Solflare or Backpack on Solana devnet to make real payments. Your wallet asks you to approve each one.</p>
+      <p class="small muted" id="walletHint" style="margin:0">Connect your Solana wallet (Solflare, Phantom, Backpack…) on devnet. It is the community treasury: it approves payments and tops up Coco's spending wallet.</p>
       <div class="row small" id="openIn" hidden></div>
 
       <div>
@@ -193,7 +209,25 @@ form .full{grid-column:1/-1}
     </section>
   </div>
 
-  <div class="grid" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)">
+  <section id="cocoBox">
+    <h2>Coco's spending wallet <small>pays on its own with x402</small></h2>
+    <p class="small muted" style="margin:0">With <b>Who pays: Coco on its own</b>, Coco asks the store for a skill, gets a <span class="mono">402 Payment Required</span>, signs the USDC payment with this small wallet and gets the skill. Nobody taps “Confirm”. The x402 facilitator pays the network fee, so Coco needs no SOL. Your wallet (the community treasury) tops it up.</p>
+    <div class="coco">
+      <div class="wbox"><span class="lbl">Coco's address</span><div class="addr" id="cocoAddr">—</div></div>
+      <div class="wbox"><span class="lbl">Coco's balance</span><b id="cocoBal">—</b><span class="small muted">USDC on devnet</span></div>
+      <div class="wbox"><span class="lbl">Spent today</span><b id="cocoSpent">0.0000</b><span class="small muted" id="cocoBudgetTxt">of 1.00 USDC daily budget</span><div class="meter" id="cocoMeter" style="margin-top:6px"><i></i></div></div>
+      <div class="wbox"><span class="lbl">Daily budget</span>
+        <div class="row" style="margin-top:4px"><input class="amt" id="cocoBudget" type="number" min="0.01" max="100" step="0.01" value="1" aria-label="Daily budget in USDC"><span class="small muted">USDC</span></div></div>
+    </div>
+    <div class="row">
+      <input class="amt" id="topAmt" type="number" min="0.01" max="100" step="0.01" value="1" aria-label="Top-up amount in USDC"><span class="small muted">USDC</span>
+      <button class="go" id="topUp">Top up Coco from my wallet</button>
+      <span class="small" id="cocoMsg" aria-live="polite"></span>
+    </div>
+    <p class="small muted" style="margin:0">Coco's key is created in this browser and never leaves it (devnet only, never shown). The budget resets every day. If it runs out, Coco stops and says so.</p>
+  </section>
+
+  <div class="grid grid2">
     <section>
       <h2>Skill store <small>price per use</small></h2>
       <div id="store" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
@@ -214,12 +248,12 @@ form .full{grid-column:1/-1}
   </div>
 
   <section>
-    <p class="pitch">A robot that belongs to everyone, learns what the community votes for, and pays the people who teach it.</p>
+    <p class="pitch">Isla Skills is an app store for robot skills. Robots pay on their own, per use, with x402 on Solana.</p>
     <div class="how">
       <div><b>Publish</b>Developers list a skill with a price per use and a payout wallet.</div>
       <div><b>Vote</b>House members vote on which skill Coco learns next.</div>
       <div><b>Work</b>Coco runs its installed skills as tasks around the house.</div>
-      <div><b>Pay</b>Each use sends a payment from the community treasury (a Solana wallet such as Phantom) to the developer, and 5% stays in the community treasury.</div>
+      <div><b>Pay</b>Coco pays the developer on its own for each use, with x402, from a small daily budget the community treasury (any Solana wallet) tops up. 5% stays with the community.</div>
     </div>
     <p class="small muted" style="margin:0">Prototype for IslandDAO V5. The robot is simulated. With a wallet connected on Solana devnet, payments are real USDC (or SOL) transfers. Without it, they are simulated.</p>
   </section>
@@ -332,17 +366,76 @@ function setCur(c){
 $("curUSDC").onclick=()=>setCur("USDC");$("curX402").onclick=()=>setCur("X402");$("curSOL").onclick=()=>setCur("SOL");
 const asset=()=>cur==="SOL"?"SOL":"USDC";
 
-/* ---------- wallet / mode (Phantom, Brave Wallet or any Solana wallet on devnet) ---------- */
+/* ---------- wallets: any Solana wallet (Wallet Standard), plus older injected ones ---------- */
 let live=false,netOk=false,conn=null,owner=null,simBal=5;
-/* Every Solana wallet the browser offers: Phantom, Solflare, Backpack, Brave Wallet, or any other. */
+/* Wallet Standard: every compatible wallet (Solflare, Phantom, Backpack, Glow, Brave…) announces
+   itself with these two browser events, so no wallet is hard-coded here. */
+const CHAIN="solana:devnet",stdWallets=[],stdAdapters=new Map();
+function addStdWallet(w){
+  try{
+    if(!w||stdWallets.includes(w))return;
+    const f=w.features||{};
+    const solana=(w.chains||[]).some(c=>String(c).startsWith("solana:"));
+    if(!solana||!f["standard:connect"]||!(f["solana:signTransaction"]||f["solana:signAndSendTransaction"]))return;
+    stdWallets.push(w);walletsChanged();
+  }catch(e){}
+}
+const stdApi={register:(...ws)=>{ws.forEach(addStdWallet);return()=>{}}};
+window.addEventListener("wallet-standard:register-wallet",e=>{try{e.detail(stdApi)}catch(err){}});
+try{window.dispatchEvent(new CustomEvent("wallet-standard:app-ready",{detail:stdApi}))}catch(e){}
+function b58encode(bytes){
+  let n=0n;for(const b of bytes)n=n*256n+BigInt(b);
+  let s="";while(n>0n){s=B58[Number(n%58n)]+s;n/=58n}
+  for(const b of bytes){if(b!==0)break;s="1"+s}
+  return s;
+}
+/* Gives a Wallet Standard wallet the same shape as the older providers (connect, signTransaction…). */
+function stdAdapter(w){
+  if(stdAdapters.has(w))return stdAdapters.get(w);
+  const f=w.features;let acct=null;
+  const pickAcct=accs=>(accs||[]).find(a=>!a.chains||a.chains.some(c=>String(c).startsWith("solana:")))||null;
+  const bytesOf=t=>t.serialize({requireAllSignatures:false,verifySignatures:false});
+  const a={
+    publicKey:null,
+    async connect(opts){
+      const r=await f["standard:connect"].connect(opts&&opts.onlyIfTrusted?{silent:true}:undefined);
+      acct=pickAcct(r&&r.accounts&&r.accounts.length?r.accounts:w.accounts);
+      if(!acct)throw new Error("no account");
+      a.publicKey=new W.PublicKey(acct.address);return{publicKey:a.publicKey};
+    },
+    async disconnect(){acct=null;a.publicKey=null;if(f["standard:disconnect"])await f["standard:disconnect"].disconnect()},
+    on(ev,cb){
+      if(ev!=="accountChanged"||!f["standard:events"])return;
+      f["standard:events"].on("change",ch=>{if(!ch||!ch.accounts)return;acct=pickAcct(ch.accounts);a.publicKey=acct?new W.PublicKey(acct.address):null;cb(a.publicKey)});
+    }
+  };
+  if(f["solana:signTransaction"])a.signTransaction=async t=>{
+    const[out]=await f["solana:signTransaction"].signTransaction({account:acct,transaction:bytesOf(t),chain:CHAIN});
+    return W.Transaction.from(out.signedTransaction);
+  };
+  if(f["solana:signAndSendTransaction"])a.signAndSendTransaction=async t=>{
+    const[out]=await f["solana:signAndSendTransaction"].signAndSendTransaction({account:acct,transaction:bytesOf(t),chain:CHAIN});
+    return{signature:typeof out.signature==="string"?out.signature:b58encode(out.signature)};
+  };
+  stdAdapters.set(w,a);return a;
+}
+/* Wallet Standard wallets first; older injected providers only if the same wallet isn't already listed. */
 function detectWallets(){
-  const out=[],ph=window.phantom&&window.phantom.solana;
-  if(ph&&ph.isPhantom&&!ph.isBraveWallet)out.push({key:"phantom",name:"Phantom",p:ph});
-  if(window.solflare&&window.solflare.isSolflare)out.push({key:"solflare",name:"Solflare",p:window.solflare});
-  if(window.backpack&&(window.backpack.isBackpack||window.backpack.connect))out.push({key:"backpack",name:"Backpack",p:window.backpack});
-  if(window.braveSolana)out.push({key:"brave",name:"Brave Wallet",p:window.braveSolana});
-  if(!out.length&&window.solana&&window.solana.connect)out.push({key:"other",name:window.solana.isPhantom?"Phantom":window.solana.isSolflare?"Solflare":"wallet",p:window.solana});
+  const out=stdWallets.map(w=>({key:"std:"+w.name,name:w.name,p:stdAdapter(w)}));
+  const has=n=>out.some(x=>x.name.toLowerCase().includes(n));
+  const ph=window.phantom&&window.phantom.solana;
+  if(!has("solflare")&&window.solflare&&window.solflare.isSolflare)out.push({key:"solflare",name:"Solflare",p:window.solflare});
+  if(!has("phantom")&&ph&&ph.isPhantom&&!ph.isBraveWallet)out.push({key:"phantom",name:"Phantom",p:ph});
+  if(!has("backpack")&&window.backpack&&(window.backpack.isBackpack||window.backpack.connect))out.push({key:"backpack",name:"Backpack",p:window.backpack});
+  if(!has("brave")&&window.braveSolana)out.push({key:"brave",name:"Brave Wallet",p:window.braveSolana});
+  if(!out.length&&window.solana&&window.solana.connect)out.push({key:"other",name:window.solana.isSolflare?"Solflare":window.solana.isPhantom?"Phantom":"Solana wallet",p:window.solana});
   return out;
+}
+let ready=false;
+function walletsChanged(){
+  if(!ready)return;
+  showOwner();
+  if(detectWallets().length)$("openIn").hidden=true;
 }
 let chosenKey=null;
 const pickedWallet=()=>{const l=detectWallets();return l.find(x=>x.key===chosenKey)||l[0]||null};
@@ -372,6 +465,7 @@ async function initNetwork(){
       netOk=true;
     }catch(e){netOk=false}
   }
+  ready=true;
   setTimeout(()=>{if(!detectWallets().length){$("openIn").innerHTML=`<span class="muted">On your phone? </span>${openInLinks()}`;$("openIn").hidden=false}},1500);
   if(netOk){$("voteHint").textContent="Votes are saved on Solana devnet. One wallet, one vote.";$("boardLink").hidden=false;loadBoard();setInterval(loadBoard,20000)}
   if(!netOk)$("walletHint").textContent="Can't reach Solana devnet from this browser, so payments are simulated. In Brave, turn off Shields for this site and reload.";
@@ -379,9 +473,15 @@ async function initNetwork(){
   showOwner();
   const p=wallet();
   if(p){
-    try{p.on&&p.on("accountChanged",pk=>{owner=pk||null;showOwner();setMode()})}catch(e){}
-    try{const r=await withTimeout(p.connect({onlyIfTrusted:true}),1500);const k=pubkeyFrom(r,p);if(k){owner=k;showOwner();setMode()}}catch(e){}
+    try{const r=await withTimeout(p.connect({onlyIfTrusted:true}),1500);const k=pubkeyFrom(r,p);if(k){owner=k;watchAccount(p);showOwner();setMode()}}catch(e){}
   }
+  renderCoco();
+}
+/* Follow account switches inside the wallet (once per wallet). */
+const watched=new WeakSet();
+function watchAccount(p){
+  if(!p||watched.has(p))return;watched.add(p);
+  try{p.on&&p.on("accountChanged",k=>{if(wallet()!==p)return;owner=k||null;showOwner();setMode()})}catch(e){}
 }
 $("walletPick").onchange=e=>{chosenKey=e.target.value;showOwner()};
 function showOwner(){
@@ -395,14 +495,14 @@ function say(where,html){$("status").innerHTML=html;if(where&&$(where))$(where).
 /* Phone browsers have no wallet: these links reopen this page inside the wallet app. */
 function openInLinks(){
   const u=encodeURIComponent(location.origin+location.pathname),r=encodeURIComponent(location.origin);
-  return `<a class="openin" href="https://phantom.app/ul/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Phantom</a><a class="openin" href="https://solflare.com/ul/v1/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Solflare</a>`;
+  return `<a class="openin" href="https://solflare.com/ul/v1/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Solflare</a><a class="openin" href="https://phantom.app/ul/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Phantom</a><a class="openin" href="https://backpack.app/ul/v1/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Backpack</a>`;
 }
 async function connectWallet(where){
   const p=wallet();
   if(!p){say(where,`No Solana wallet in this browser. Open this page inside your wallet app:<br>${openInLinks()}`);return false}
   if(!netOk){say(where,"Can't reach Solana devnet. In Brave, turn off Shields for this site and reload.");return false}
   try{
-    const r=await p.connect();owner=pubkeyFrom(r,p);if(!owner)throw new Error("no key");
+    const r=await p.connect();owner=pubkeyFrom(r,p);if(!owner)throw new Error("no key");watchAccount(p);
     showOwner();setMode();say(where,`${esc(walletName())} connected. Make sure it's set to Solana <b>Devnet</b>.`);return true;
   }catch(e){say(where,`Connection cancelled in ${esc(walletName())}.`);return false}
 }
@@ -423,7 +523,7 @@ async function refreshBal(){
 $("airdrop").onclick=async()=>{
   const b=$("airdrop");b.disabled=true;$("status").textContent="Requesting 1 devnet SOL…";
   try{const sig=await conn.requestAirdrop(owner,1e9);await conn.confirmTransaction(sig,"confirmed");$("status").textContent="Received 1 devnet SOL.";refreshBal()}
-  catch(e){$("status").textContent="Airdrop limit reached. Use the Solana faucet with your Phantom address."}
+  catch(e){$("status").innerHTML=`Airdrop limit reached. Use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a> with your wallet address.`}
   b.disabled=false;
 };
 
@@ -576,17 +676,28 @@ $("closeVote").onclick=async()=>{
 /* ---------- robot ---------- */
 function installed(){return skills.filter(s=>s.installed)}
 const phases=["Planning route","Moving","Working","Checking result"];
+function animate(s,steps,done){
+  $("botFace").classList.add("work");
+  const t0=Date.now(),dur=Math.max(1700,steps.length*450),n=steps.length;
+  (function tick(){
+    const p=Math.min(1,(Date.now()-t0)/dur);$("pb").style.width=p*100+"%";
+    $("status").textContent=`${steps[Math.min(n-1,Math.floor(p*n))]}: ${s.name}`;
+    if(p<1)return setTimeout(tick,60);
+    done();
+  })();
+}
 function runTask(){
   if(busy)return;const list=installed();if(!list.length)return;
   const s=list[taskIdx++%list.length];
-  busy=true;$("runOne").disabled=true;$("botFace").classList.add("work");
-  const t0=Date.now(),dur=1700;
-  (function tick(){
-    const p=Math.min(1,(Date.now()-t0)/dur);$("pb").style.width=p*100+"%";
-    $("status").textContent=`${phases[Math.min(3,Math.floor(p*4))]}: ${s.name}`;
-    if(p<1)return setTimeout(tick,60);
-    pay(s);
-  })();
+  busy=true;$("runOne").disabled=true;
+  if(payer==="coco")return cocoTask(s);
+  animate(s,phases,()=>pay(s));
+}
+function stopShift(){auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false")}
+function endTask(){
+  busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
+  refreshBal();renderLedger();renderStore();renderCoco();
+  if(auto)setTimeout(runTask,700);
 }
 async function pay(s){
   const devAmt=+(s.price*0.95).toFixed(6),fee=+(s.price-devAmt).toFixed(6);
@@ -620,19 +731,154 @@ async function pay(s){
     tx.status="confirmed";tx.cur=!live?"USDC":cur==="X402"?"USDC · x402":cur;s.runs++;s.earned+=devAmt;totals.paid+=devAmt;totals.runs++;
     $("status").textContent=`Done. Paid ${devAmt.toFixed(4)} ${live?asset():"USDC"}${live&&cur==="X402"?" through x402, no network fee for you,":""} to ${s.dev} for “${s.name}”. 5% stays with the community.`;
   }catch(e){
-    tx.status="failed";auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false");
+    tx.status="failed";stopShift();
     const m=String(e&&e.message||e);
     console.error("Payment error",e);
     if(live&&m==="NO_SOL"){$("status").innerHTML=NO_SOL_MSG()}
     else if(live&&/expired|block height exceeded/i.test(m)){$("status").innerHTML=`The transaction never reached Solana devnet. Usually the wallet is on <b>Mainnet</b> or has no devnet SOL. Switch ${esc(walletName())} to <b>Devnet</b>, tap <b>Get devnet SOL</b>, and try again.`}
     else $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":m==="X402_UNSUPPORTED"?"The x402 facilitator isn't offering Solana devnet right now. Switch Pay in to USDC.":/^X402/.test(m)?m.replace(/^X402:\s*/,"x402 facilitator said: ").slice(0,180)+" Try Pay in USDC instead.":/signTransaction|not a function/i.test(m)?walletName()+" can't sign for x402 here. Switch Pay in to USDC.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
   }
-  busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
-  refreshBal();renderLedger();renderStore();
-  if(auto)setTimeout(runTask,700);
+  endTask();
 }
 $("runOne").onclick=runTask;
 $("auto").onclick=()=>{auto=!auto;$("auto").textContent=auto?"End shift":"Start shift";$("auto").setAttribute("aria-pressed",auto);if(auto&&!busy)runTask()};
+
+/* ---------- Coco pays on its own: x402 with a small spending wallet and a daily budget ----------
+   1. GET /api/skills/:id  -> 402 Payment Required + paymentRequirements (payTo, amount, feePayer)
+   2. Coco signs a USDC transferChecked with its own key (fee payer = the facilitator)
+   3. GET again with X-PAYMENT -> the store's server has the facilitator verify and settle it,
+      then returns the skill (task instructions) and X-PAYMENT-RESPONSE with the signature. */
+const SKILL_API="/api/skills/";
+const COCO_KEY="isla:coco:v1",BUDGET_KEY="isla:coco:budget",SPENT_KEY="isla:coco:spent";
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
+let payer="treasury",coco=null,cocoSaved=true;
+function cocoWallet(){
+  if(coco||!W)return coco;
+  const saved=store.get(COCO_KEY);
+  if(saved){try{coco=W.Keypair.fromSecretKey(Uint8Array.from(JSON.parse(saved)))}catch(e){coco=null}}
+  if(!coco){coco=W.Keypair.generate();cocoSaved=store.set(COCO_KEY,JSON.stringify(Array.from(coco.secretKey)))}
+  return coco;
+}
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+const toUnits=x=>Math.round(Number(x)*10**USDC_DECIMALS);
+const fromUnits=u=>Number(u)/10**USDC_DECIMALS;
+const fmtUsdc=u=>String(+fromUnits(u).toFixed(4));
+function budgetUnits(){const v=Number(store.get(BUDGET_KEY));return v>0?v:toUnits(1)}
+function spentUnits(){try{const d=JSON.parse(store.get(SPENT_KEY)||"null");return d&&d.day===today()?Number(d.units)||0:0}catch(e){return 0}}
+let spentMem=null;
+function getSpent(){const v=spentUnits();return spentMem&&spentMem.day===today()?Math.max(v,spentMem.units):v}
+function addSpent(u){const units=getSpent()+u;spentMem={day:today(),units};store.set(SPENT_KEY,JSON.stringify(spentMem))}
+async function renderCoco(){
+  const k=cocoWallet();if(!k)return;
+  const a=k.publicKey.toBase58();
+  $("cocoAddr").innerHTML=`<a href="https://explorer.solana.com/address/${a}?cluster=devnet" target="_blank" rel="noopener" style="color:var(--accent)">${a}</a>${cocoSaved?"":"<br>This browser can't save Coco's key, so it's lost when you close the page."}`;
+  const b=budgetUnits(),sp=getSpent();
+  if(document.activeElement!==$("cocoBudget"))$("cocoBudget").value=fromUnits(b);
+  $("cocoSpent").textContent=fromUnits(sp).toFixed(4);
+  $("cocoBudgetTxt").textContent=`of ${fmtUsdc(b)} USDC daily budget`;
+  $("cocoMeter").firstElementChild.style.width=Math.min(100,sp/b*100)+"%";
+  $("cocoMeter").classList.toggle("full",sp>=b);
+  if(netOk){try{$("cocoBal").textContent=(await usdcBalance(k.publicKey)).toFixed(4)}catch(e){}}
+  else $("cocoBal").textContent="offline";
+}
+$("cocoBudget").onchange=e=>{const v=Number(e.target.value);if(v>0&&v<=100){store.set(BUDGET_KEY,String(toUnits(v)));renderCoco()}};
+function setPayer(p){
+  payer=p;
+  [["treasury","payerTreasury"],["coco","payerCoco"]].forEach(([k,id])=>{$(id).classList.toggle("on",k===p);$(id).setAttribute("aria-checked",k===p)});
+  $("payInRow").hidden=p==="coco";
+  if(p==="coco")$("status").textContent=netOk?"Coco pays on its own with x402 from its spending wallet. Run a task.":"Coco needs Solana devnet to pay on its own, and this browser can't reach it.";
+  renderCoco();
+}
+$("payerTreasury").onclick=()=>setPayer("treasury");$("payerCoco").onclick=()=>setPayer("coco");
+
+/* The treasury (the wallet you connected) sends USDC to Coco in one signature. It also opens the
+   USDC accounts of Coco and of the developers of installed skills, because Coco has no SOL for that. */
+$("topUp").onclick=async()=>{
+  const btn=$("topUp"),amt=Number($("topAmt").value);
+  if(!(amt>0&&amt<=100)){say("cocoMsg","Choose an amount between 0.01 and 100 USDC.");return}
+  if(!live&&!(await connectWallet("cocoMsg")))return;
+  if(!(await hasFeeSol())){say("cocoMsg",NO_SOL_MSG());return}
+  if(await usdcBalance(owner)<amt){say("cocoMsg",`Your wallet doesn't have ${amt} devnet USDC. Get some at <a href="https://faucet.circle.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.circle.com</a> (choose Solana Devnet).`);return}
+  const k=cocoWallet(),cocoAta=ataOf(k.publicKey);
+  const t=new W.Transaction().add(createAtaIdempotentIx(owner,cocoAta,k.publicKey),transferCheckedIx(ataOf(owner),cocoAta,owner,toUnits(amt)));
+  try{
+    const devs=[...new Set(installed().map(x=>x.wallet))].slice(0,6).map(pk);
+    const infos=await conn.getMultipleAccountsInfo(devs.map(ataOf));
+    devs.forEach((d,i)=>{if(!infos[i])t.add(createAtaIdempotentIx(owner,ataOf(d),d))});
+  }catch(e){}
+  btn.disabled=true;
+  say("cocoMsg",`Approve sending ${amt} USDC to Coco in ${esc(walletName())}.`);
+  try{
+    const sig=await sendTx(t);
+    say("cocoMsg",`Coco received ${amt} USDC. ${txLink(sig,"See it on Explorer")}`);
+  }catch(e){
+    const m=String(e&&e.message||e);console.error("Top-up failed",e);
+    say("cocoMsg",/reject|denied|cancel/i.test(m)?`Cancelled in ${esc(walletName())}.`
+      :/expired|block height exceeded|blockhash|not found/i.test(m)?`The transaction didn't reach Solana devnet. Switch ${esc(walletName())} to <b>Devnet</b> and try again.`
+      :"Top-up failed: "+esc(m.slice(0,140)));
+  }
+  btn.disabled=false;refreshBal();renderCoco();
+};
+
+const b64=obj=>Buffer.from(JSON.stringify(obj),"utf8").toString("base64");
+function unb64(str){try{return JSON.parse(Buffer.from(str,"base64").toString("utf8"))}catch(e){return null}}
+async function cocoTask(s){
+  const k=cocoWallet();
+  const tx={skill:s.name,dev:s.dev,amt:+(s.price*0.95).toFixed(6),sig:null,status:"asking",live:true,cur:"USDC · x402 · Coco",
+    steps:[{t:"asking the store…"}]};
+  txs.unshift(tx);renderLedger();
+  const step=(i,t,cls)=>{tx.steps[i]={t,cls};renderLedger()};
+  const fail=(html,i)=>{tx.status="failed";step(i,tx.steps[i]&&tx.steps[i].cls==="ok"?tx.steps[i].t:"failed","err");$("status").innerHTML=html;stopShift();endTask()};
+  if(!netOk||!k)return fail("Coco needs Solana devnet to pay on its own, and this browser can't reach it.",0);
+  const url=SKILL_API+encodeURIComponent(s.id);
+  try{
+    // 1. ask for the skill: the store answers 402 with what to pay
+    $("status").textContent=`Coco asks the store for “${s.name}”…`;
+    let r=await withTimeout(fetch(url,{headers:{Accept:"application/json"}}),20000);
+    let j=null;try{j=await r.json()}catch(e){}
+    if(r.status!==402)return fail(r.status===404&&!j?"The skill store server isn't running here. It runs on the live site (Netlify Functions), or locally with <span class=\"mono\">npx netlify-cli dev</span>."
+      :`The store answered ${r.status}${j&&j.error?": "+esc(String(j.error).slice(0,160)):""}.`,0);
+    const req=(j&&Array.isArray(j.accepts)?j.accepts:[]).find(a=>a&&a.scheme==="exact"&&a.network===X402_NETWORK&&a.asset===USDC_MINT);
+    if(!req||!validPk(req.payTo)||!req.extra||!validPk(req.extra.feePayer)||!/^\d+$/.test(String(req.maxAmountRequired)))
+      return fail("The store asked for a payment Coco doesn't understand (it only pays USDC on Solana devnet with x402 exact).",0);
+    const units=Number(req.maxAmountRequired);
+    // Coco never pays more than the listed price, nor beyond today's budget
+    if(units>toUnits(s.price))return fail(`The store asked ${fromUnits(units)} USDC but “${esc(s.name)}” is listed at ${s.price}. Coco didn't pay.`,0);
+    tx.amt=fromUnits(units);
+    step(0,`402 received · ${fromUnits(units).toFixed(4)} USDC to ${short(req.payTo)}`,"ok");
+    const b=budgetUnits(),sp=getSpent();
+    if(sp+units>b){tx.status="stopped";step(1,"budget used up","err");$("status").textContent=`Coco stopped: today's budget is used up (${fromUnits(sp).toFixed(4)} of ${fmtUsdc(b)} USDC). Raise the budget or wait until tomorrow.`;stopShift();return endTask()}
+    if(await usdcBalance(k.publicKey)<fromUnits(units))return fail("Coco's spending wallet is out of USDC. Tap <b>Top up Coco from my wallet</b>.",1);
+    const payTo=pk(req.payTo),dst=ataOf(payTo);
+    if(!(await conn.getAccountInfo(dst)))return fail("This developer has no USDC account yet, and Coco has no SOL to open one. Tap <b>Top up Coco from my wallet</b>: it opens it.",1);
+    // 2. Coco signs the payment (same rules as payX402: compute budget + transferChecked, facilitator pays the fee)
+    step(1,"signing…");$("status").textContent="Coco signs the payment with its spending wallet…";
+    const t=new W.Transaction().add(cuLimitIx(60000),cuPriceIx(1),transferCheckedIx(ataOf(k.publicKey),dst,k.publicKey,units));
+    t.feePayer=pk(req.extra.feePayer);t.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
+    t.partialSign(k);
+    const payment={x402Version:1,scheme:"exact",network:X402_NETWORK,payload:{transaction:t.serialize({requireAllSignatures:false,verifySignatures:false}).toString("base64")}};
+    // 3. ask again with X-PAYMENT: the store verifies + settles through the facilitator, then delivers
+    $("status").textContent="Coco sends the payment. The facilitator checks it and puts it on Solana…";
+    r=await withTimeout(fetch(url,{headers:{Accept:"application/json","X-PAYMENT":b64(payment)}}),45000);
+    j=null;try{j=await r.json()}catch(e){}
+    if(!r.ok)return fail(`Payment not accepted (${r.status}): ${esc(String(j&&j.error||"no details").slice(0,200))}`,1);
+    const settled=unb64(r.headers.get("X-PAYMENT-RESPONSE")||"")||{};
+    const sig=settled.transaction||(j&&j.paid&&j.paid.transaction);
+    tx.sig=typeof sig==="string"&&/^[1-9A-HJ-NP-Za-km-z]{43,100}$/.test(sig)?sig:null;
+    addSpent(units);
+    step(1,tx.sig?`paid · <a href="${EXPLORER(tx.sig)}" target="_blank" rel="noopener">Explorer ↗</a>`:"paid","ok");
+    const got=j&&j.skill,steps=got&&Array.isArray(got.steps)&&got.steps.length?got.steps.slice(0,8).map(x=>String(x).slice(0,80)):phases;
+    step(2,`skill delivered · ${steps.length} steps`,"ok");
+    tx.status="confirmed";s.runs++;s.earned+=tx.amt;totals.paid+=tx.amt;totals.runs++;
+    renderCoco();
+    // 4. now Coco runs the task with the instructions it bought
+    animate(s,steps,()=>{$("status").textContent=`Done. Coco paid ${tx.amt.toFixed(4)} USDC to ${s.dev} on its own for “${s.name}”, with x402. 5% stays with the community.`;endTask()});
+  }catch(e){
+    console.error("Coco payment error",e);
+    const m=String(e&&e.message||e);
+    fail(m==="timeout"?"The store took too long to answer. Try again.":/Failed to fetch|NetworkError|Load failed/i.test(m)?"Couldn't reach the skill store server.":"Coco couldn't pay: "+esc(m.slice(0,160)),tx.steps.length-1);
+  }
+}
 
 /* ---------- store / ledger ---------- */
 function renderStore(){
@@ -651,8 +897,9 @@ function renderLedger(){
    <div class="tx">
      <span><b>Coco</b> → ${esc(t.dev)}</span><span class="amt">${t.amt.toFixed(4)} ${t.cur||""}</span>
      <span class="small muted">${esc(t.skill)}</span>
-     <span class="pill ${t.status=="confirmed"?"ok":t.status=="failed"?"err":""}">${t.status}</span>
+     <span class="pill ${t.status=="confirmed"?"ok":t.status=="failed"||t.status=="stopped"?"err":""}">${t.status}</span>
      <span class="sig">${t.sig?(t.live?`<a href="${EXPLORER(t.sig)}" target="_blank" rel="noopener">${t.sig}</a>`:t.sig+" (simulated)"):"…"}</span>
+     ${t.steps?`<span class="steps">${t.steps.map(x=>`<span class="${x.cls||""}">${x.t}</span>`).join(" → ")}</span>`:""}
    </div>`).join("");
 }
 $("pub").addEventListener("submit",async e=>{

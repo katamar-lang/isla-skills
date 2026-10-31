@@ -1,95 +1,104 @@
 # Isla Skills · project context for Claude
 
-Read this first. It is the handoff from the conversation where the project was built (Oct 27–31, 2026).
-
-> **Current work: read [`docs/hackathon-plan.md`](docs/hackathon-plan.md).** On Oct 31 the focus changed: skills are paid-per-use services (x402), the main demo is **Beach Patrol**, the community vote is being removed, and an "Ask a human" skill is added. That file is the build spec and overrides the roadmap below where they differ.
+Read this first, then [`docs/hackathon-plan.md`](docs/hackathon-plan.md) (the build spec and the goal: **win IslandHack v5**, entries close **Nov 11, 2026**). Where the two differ, the plan wins.
 
 ## What it is
 
-Isla Skills is an **app store for robot skills, paid per use** on Solana. Developers publish skills with a price per use; every time a robot uses a skill, the developer gets paid in USDC.
+Isla Skills is an **app store for robot skills**. Each skill is a **service** a robot calls and pays **per use**, in USDC on Solana, with **x402**. No human approves anything. Skills come from AI models and from people.
 
-**Coco** is the first demo: a *simulated* robot owned by the IslandDAO V5 community (Florianópolis). The community votes on which skill Coco learns next. 95% of each payment goes to the developer, 5% stays with the community.
+**Beach Patrol** is the demo: **Coco**, a *simulated* beach robot in Florianópolis (a phone or laptop camera plays its eyes), patrols with one photo and pays a chain of skills, each with its own payout wallet:
 
-Pitch (IslandHack v5): "Isla Skills is an app store for robot skills. Robots pay on their own, per use, with x402 on Solana."
+1. **Litter Spotter** (AI, Claude Haiku with vision) · 0.01 USDC
+2. **Human Reviewer** (a real person, only when the AI is unsure) · 0.005 USDC to whoever answers
+3. **Cleanup Planner** (rules) · 0.002 USDC
 
-**The project must not depend on Phantom.** Most people at the house use Solflare. Any Solana wallet must work; in copy say "your Solana wallet (Solflare, Phantom, Backpack…)". The "community treasury" is simply the wallet the person connects.
+Pitch: "Robots are learning new skills through software, but there's no way to pay for a skill each time a robot uses it. Isla Skills is an app store for robot skills: each skill is a service the robot calls and pays per use, in USDC on Solana, with x402. No human approves anything. Skills can come from AI models and from people."
 
-- Live demo: https://isla-skills-dao-2b40fb.netlify.app
-- Board of votes on Solana Explorer: https://explorer.solana.com/address/Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu?cluster=devnet
-- Listed in the IslandDAO V5 project directory. IslandHack v5 entries close **Nov 11, 2026** (owner still deciding whether to enter).
+**Don't depend on Phantom.** Most people at the house use Solflare. Copy says "your Solana wallet (Solflare, Phantom, Backpack…)".
+
+**Nothing on the page may be false.** There is no community vote and no 5% community share anymore (both removed Oct 31); 100% of each price goes to the skill's maker.
+
+- Live demo: https://isla-skills-dao-2b40fb.netlify.app (reviewers: `/review`)
+- Everything runs on **Solana devnet** (test USDC).
 
 ## How the code is organised
 
-- **No build step.** The whole app is `index.html` (HTML + CSS + one inline script).
-- `netlify/functions/skills.mjs`: the x402 skill store (Netlify Function, no dependencies), served at `/api/skills/:id`.
-- `web3.min.js` = `@solana/web3.js@1.95.3` IIFE build **with a Buffer polyfill prepended** (`buffer@6.0.3`, bundled with esbuild). Wallets need `window.Buffer`; do not replace this file with the plain CDN build.
-- `favicon.png`, `apple-touch-icon.png`: the gold robot logo. `assets/`: cover, logo, screenshot of the first payment.
-- Everything runs on **Solana devnet**. If the page can't reach devnet, it falls back to a simulated mode with example votes.
+No build step for the pages. Netlify Functions (Node, ES modules) hold the server.
 
-### Main pieces inside `index.html`
-
-| Area | What it does |
+| File | What it is |
 |---|---|
-| `addStdWallet()`, `stdAdapter()`, `detectWallets()`, `connectWallet()` | **Wallet Standard**: the page dispatches `wallet-standard:app-ready` and listens to `wallet-standard:register-wallet`, so any compatible Solana wallet appears. `stdAdapter` gives it the old provider shape (`connect`, `signTransaction`, `signAndSendTransaction`, `on("accountChanged")`), always with chain `solana:devnet`. Older injected providers (`window.solflare`, `window.phantom.solana`, `window.backpack`, `window.braveSolana`) are a fallback, not listed twice. Picker (`#walletPick`) when several are installed. Phones without a wallet: "Open in Solflare / Phantom / Backpack" deep links |
-| `sendTx()` | Sign and send with the connected wallet (prefers `signAndSendTransaction`) and confirm on devnet |
-| `pay()` | Runs when Coco finishes a task. **Pay in** options: `USDC` (direct transferChecked, creates the dev's token account if needed), `USDC · x402 (beta)`, `SOL` |
-| `payX402()` | Gasless USDC via the Ultravioleta DAO facilitator (see Known issues) |
-| Community board (`loadBoard`, `applyBoard`, `postBoard`) | Votes, new skills and closed rounds are **memos** signed by the wallet, sent with a 0-SOL transfer to the board address so they can be listed. State is rebuilt from chain for everyone. One wallet, one vote (latest counts). Data from memos is untrusted: validated and escaped |
-| Coco on its own (`cocoWallet`, `cocoTask`, `renderCoco`, `#topUp`) | **Who pays: Coco on its own · x402**. `GET /api/skills/:id` → 402 → Coco signs a transferChecked with its own keypair (compute budget + transfer, fee payer = facilitator, same rules as `payX402`) → retry with `X-PAYMENT` → skill JSON + `X-PAYMENT-RESPONSE`. Then Coco runs the task with the skill's steps. Ledger shows "402 received → paid → skill delivered" with Explorer link |
-| `say(where, html)` | Messages appear where the person tapped (`voteHint`, `pubMsg`) and in Coco's status box |
+| `index.html` | Beach Patrol: photo (upload, phone camera, "desk robot" webcam, optional samples in `assets/samples/beach-1..3.jpg`), patrol timeline, "Who pays whom", live usage numbers, top up Coco |
+| `review.html` | "Earn by helping robots, from anywhere." Reviewer connects any Solana wallet, sees pending photos + the AI's question, answers with one tap, sees payments. Served at `/review` via `_redirects` |
+| `wallet.js` | Shared wallet code (`window.IslaWallet`): **Wallet Standard** discovery (`wallet-standard:app-ready` / `register-wallet`) + legacy providers as fallback, picker, "Open in Solflare / Phantom / Backpack" phone links, USDC instructions, `sendTx`, error messages |
+| `style.css` | Shared styles (light/dark tokens) |
+| `web3.min.js` | `@solana/web3.js@1.95.3` IIFE build **with a Buffer polyfill prepended**. Don't replace with the plain CDN build |
+| `netlify/functions/skills.mjs` | The store: `GET /api/skills/:id` (info), `POST /api/skills/:id` → **402** with x402 v1 requirements; with `X-PAYMENT` → facilitator `/verify` (in parallel with the work) → `/settle` → result + `X-PAYMENT-RESPONSE`. If the work fails, the payment is never settled |
+| `netlify/functions/coco.mjs` | Coco's wallet service: `GET /api/coco` (address, balance, budget, photo limits, readiness), `POST /api/coco/pay` (signs one payment if it passes every rule, below) |
+| `netlify/functions/reviews.mjs` | `GET /api/reviews[?wallet=]`, `GET /api/reviews/:id`, `GET /api/reviews/:id/image`, `POST /api/reviews/:id/answer` |
+| `netlify/functions/stats.mjs` | `GET /api/stats`: public numbers read from Solana (every USDC transfer out of Coco's USDC account), cached 30 s, cache cleared after each settled payment |
+| `netlify/lib/*.mjs` | `config` (prices, limits, skill wallets), `store` (Netlify Blobs), `solana` (keys, USDC instructions, sponsor), `x402` (requirements, remote + local facilitator), `spotter` (Claude), `planner` |
+| `scripts/new-keys.mjs` | The owner runs it **on her computer** to create `COCO_SECRET_KEY` and `SPONSOR_SECRET_KEY`. Never run it where the output is logged or shown in chat |
 
-### Constants worth knowing
+### The patrol, step by step (browser = Coco's body, server = Coco's wallet)
 
-- Board address: `Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu` (no private key exists; it only receives 0-SOL transfers)
-- Memo program: `MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`, memo prefix `isla:v1:` + JSON (`{t:"vote",r,s}`, `{t:"skill",n,d,p,dev,w}`, `{t:"close",r}`)
+1. Page shrinks the photo (≤1024 px JPEG) and `POST /api/skills/litter-spotter {image}` → 402 (or 429 if a photo limit is reached, 503 if no AI key).
+2. Page sends the 402 requirements to `POST /api/coco/pay` → base64 `X-PAYMENT`. Page retries the skill with it → 200 result.
+3. If `result.unsure`: `POST /api/skills/human-reviewer {spotId}` → 202 `{reviewId}`; the page polls with `{reviewId}` every 2 s: 202 waiting, **402 once a person answered** (payTo = that person) → pay like any skill, **410 after 60 s** → Coco uses the AI guess and pays nothing. A late answer gets 410 too.
+4. `POST /api/skills/cleanup-planner {items}` (with the human correction applied) → 402 → pay → plan.
+
+### Coco's wallet rules (`/api/coco/pay`)
+
+Known skill · `resource` = this store's `/api/skills/<id>` · exact/solana-devnet/devnet USDC · amount = listed price · `payTo` = the skill's wallet (for Human Reviewer: the person who answered that review, not yet paid) · never Coco's own address · fee payer = the facilitator's · ≤ 40 payments per visitor per day · **daily budget** (default 1 USDC, `coco/spent/<UTC day>` in Blobs, counted at signing time, so a failed settle still uses budget) · enough USDC. If the payee has no USDC account, the **sponsor wallet** opens it.
+
+### Limits that protect the Claude bill
+
+`PHOTOS_PER_DAY` (100) and `PHOTOS_PER_VISITOR_PER_DAY` (5), checked before the 402 and before calling Claude; a photo is counted before the AI call. Visitor = sha256(UTC day + IP), not stored in clear.
+
+### Netlify Blobs keys (store `isla-skills`, strong consistency)
+
+`coco/spent/<day>`, `coco/pays/<day>/<visitor>`, `photos/<day>`, `photos/<day>/<visitor>`, `spot/<id>` (photo + AI result, only when unsure), `review/<id>`, `pending/<id>`, `reviewer/<wallet>` (last 50 review ids), `stats/cache`. No transactions: counters are read-modify-write (fine for a demo; the money in Coco's wallet is the hard limit).
+
+## Setup on Netlify (owner)
+
+Environment variables (Site configuration → Environment variables, mark secrets as secret):
+
+| Variable | What |
+|---|---|
+| `COCO_SECRET_KEY` | Coco's devnet key, from `node scripts/new-keys.mjs`. **Secret** |
+| `SPONSOR_SECRET_KEY` | Devnet key with ~1 SOL: opens USDC accounts for skills and reviewers, and pays fees in plan B. **Secret** |
+| `ANTHROPIC_API_KEY` | For Litter Spotter. **Secret**, server only |
+| `LITTER_SPOTTER_WALLET`, `CLEANUP_PLANNER_WALLET` | Payout addresses of each skill's maker (defaults in `config.mjs` are placeholder addresses with no known key: set real ones) |
+| `X402_FACILITATOR_URL` | Default `https://facilitator.ultravioletadao.xyz`. `local` = plan B (this server verifies and submits; fee payer = sponsor). Another facilitator URL also works |
+| optional | `COCO_DAILY_BUDGET_UNITS` (1000000), `PHOTOS_PER_DAY` (100), `PHOTOS_PER_VISITOR_PER_DAY` (5), `COCO_PAYMENTS_PER_VISITOR_PER_DAY` (40), `SOLANA_RPC_URL` |
+
+Then top up Coco with devnet USDC from the page ("Top up Coco"), and send the sponsor 1 devnet SOL.
+
+## Constants worth knowing
+
 - Devnet USDC mint (Circle): `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`, 6 decimals
-- Example skills have fixed payout addresses (see `SEED` in the script)
-- x402 facilitator: `https://facilitator.ultravioletadao.xyz`, network `solana-devnet`, x402 v1, scheme `exact`; fee payer comes from `GET /supported`. On the server it's the env var `X402_FACILITATOR_URL` (set it in Netlify → Site configuration → Environment variables to switch). `SOLANA_RPC_URL` optional.
-- Server catalog (`CATALOG` in `skills.mjs`) must match `SEED` in `index.html` (ids, prices, payout wallets). Community skills (`c` + 10 chars of the memo signature) are read from the board on devnet.
-- Amount charged = 95% of the listed price (developer share), in USDC units (6 decimals): Serve coffee 0.002 → `1900`. Coco refuses a 402 that asks more than the listed price.
-
-## Coco's spending wallet (agreed with the owner, Oct 31)
-
-- The connected wallet is the **community treasury**. Coco has its own small devnet `Keypair`, created in the browser and saved in `localStorage` (`isla:coco:v1`). Never show, log or commit it.
-- **Top up Coco from my wallet**: one treasury signature sends USDC to Coco and opens (create ATA idempotent) Coco's and the installed skills' developers' USDC accounts, because Coco has no SOL and the facilitator doesn't pay rent.
-- Daily budget in `localStorage` (`isla:coco:budget`, units; default 1 USDC), spent today in `isla:coco:spent` (`{day, units}`). When the next payment would pass the budget, Coco stops the shift and says so.
-- Each browser has its own Coco wallet (it's a demo; a real robot would keep its key on the device).
+- x402 v1, scheme `exact`, network `solana-devnet`; Coco's transaction = ComputeBudget limit 60000 + price 1 + one `transferChecked`; fee payer from the facilitator's `GET /supported`
+- Claude model `claude-haiku-5-5`, `messages.parse` with a Zod schema (`zodOutputFormat`), effort `low`, 9 s timeout, no retries
+- Old community board address `Gg46k4Fai…d5tu` is no longer used by the page
 
 ## Deploying
 
-Pushing to `main` deploys automatically: `.github/workflows/deploy.yml` copies the site files to `public/` and runs `netlify deploy --prod --functions=netlify/functions` (so the x402 store is deployed too) to the existing Netlify project (site ID `774dae81-dcf7-42e4-b800-fad91c6ba090`). The token lives in the repo secret `NETLIFY_AUTH_TOKEN`. Never print or commit tokens.
-
-If you add a new file the site needs, also add it to the `cp` line in the workflow.
+Pushing to `main` deploys: `.github/workflows/deploy.yml` runs `npm ci`, copies the site files to `public/` (if you add a file the site needs, add it to the `cp` line), and runs `netlify deploy --prod --functions=netlify/functions` to site `774dae81-dcf7-42e4-b800-fad91c6ba090`. Token: repo secret `NETLIFY_AUTH_TOKEN`. Never print or commit tokens or keys.
 
 ## Testing
 
-- Syntax check: extract the last inline `<script>` and run `node --check`.
-- Behaviour: load `index.html` in jsdom with `web3.min.js` inlined; fake Wallet Standard wallets (register via `wallet-standard:app-ready` and `wallet-standard:register-wallet`, sign with a real `Keypair`), stub `conn` with `window.eval("conn=…;netOk=true;setMode()")`, and route `window.fetch` to the function's default export with a fake facilitator that decodes the transaction with `@solana/spl-token`. Real wallet signing can only be tested by the owner in her browser.
-- Server: import `netlify/functions/skills.mjs` in Node, mock `globalThis.fetch` for the facilitator, call the default export with a `Request`.
-- Layout: screenshot with Playwright at 1280px and 390px.
-- **This cloud environment's network blocks `api.devnet.solana.com` and the facilitator**, so the real end-to-end x402 test has to be run on the live site, or after allowing those hosts in the environment's network settings.
-- Before pushing a payment change, compare hand-built instructions against `@solana/spl-token` (this was done for the USDC instructions).
+- Syntax: `node --check` on every `netlify/**/*.mjs`, and on the inline script of each page.
+- Server: import the functions in Node with a fake ledger (`setConnection`), in-memory Blobs (`setStore(memoryStore())`), a fake Claude (`setClaudeClient`) and a fake facilitator on `globalThis.fetch`; test both `X402_FACILITATOR_URL=https://…` and `local`. Decode the transactions with `@solana/spl-token`.
+- End to end: Playwright with a static server and `context.route("**/api/**")` calling the functions; a fake Wallet Standard wallet via `addInitScript`; two contexts (Coco page + reviewer page on a phone viewport). Screenshots at 1280 and 390 px.
+- Bundling: `npx @netlify/zip-it-and-ship-it netlify/functions <out>` must list the 4 functions with their routes.
+- **This cloud environment blocks `api.devnet.solana.com` and the facilitator**, and has no Anthropic key, so the real end-to-end test (real Claude, real devnet, real facilitator) has to be run on the live site.
 
 ## Known issues and open items
 
-- **x402 facilitator returns `contract_call_failed` on `/verify`** for solana-devnet, even for a transaction that simulates fine on devnet. Refs: `7246d3c8-5541-45d0-95ea-6f64fe3536b3`, `f068847d-d749-4f0a-ba9b-0ef73f4b6b08`. The owner was going to contact Ultravioleta DAO. Not re-tested after Oct 31 changes (network blocked in the cloud session). If it still fails, try another facilitator that supports `solana-devnet` (candidate: PayAI, `https://facilitator.payai.network`, untested) by setting `X402_FACILITATOR_URL`. The store passes the facilitator's reason through in the 402 `error`, and the page shows it.
-- Wallet Standard support, Solflare and Backpack were tested only with simulated wallets; Phantom (legacy provider) is confirmed with real payments and votes.
-- Netlify Functions time out after 10 s by default; `/verify` + `/settle` must fit in that.
-- Voting needs the wallet on **Devnet** with a little devnet SOL. The page checks this before asking to sign.
+- **Ultravioleta's facilitator returned `contract_call_failed` on `/verify`** for solana-devnet (Oct 2026, refs `7246d3c8-…`, `f068847d-…`). Not re-tested since. If it still fails: set `X402_FACILITATOR_URL=local` (plan B, tested with a simulated chain) or try another facilitator that supports solana-devnet (candidate: PayAI, `https://facilitator.payai.network`, untested). The 402 `error` carries the facilitator's exact reason and the page shows it.
+- Netlify Functions have a time limit (10 s by default on many plans). The paid Litter Spotter call runs verify ∥ Claude, then settle; measure on the live site (`Server-Timing` header).
+- Wallet Standard, Solflare and Backpack were tested only with simulated wallets. Phantom was confirmed with real payments in the earlier version.
+- Coco is shared: anyone can make it spend, up to the daily budget.
 - X hides posts with `.netlify.app` links; a custom domain (e.g. islaskills.xyz) is on the list.
-
-## Roadmap (3-week plan, started Oct 28)
-
-- [x] Code on GitHub, auto-deploy to Netlify
-- [x] USDC payments on devnet (SOL as an option)
-- [x] Votes and skills saved on Solana, one wallet one vote
-- [x] Multi-wallet support, phone deep links, clear error messages
-- [x] x402 gasless payments (beta, blocked by the facilitator error)
-- [x] Wallet Standard: any Solana wallet, Solflare first in copy (Oct 31)
-- [x] x402 skill store (`/api/skills/:id`) + Coco pays on its own with a daily budget (Oct 31, needs a real end-to-end test)
-- [ ] Get feedback from a mentor at the house; test the shared board with 2–3 people
-- [ ] **Week 2 (Nov 5–11):** Solana program (Anchor) for skill registry + pay-per-use; connect the page; 8-slide pitch deck; new demo video (no voice, music + subtitles); submit to IslandHack v5 by Nov 11
-- [ ] **Week 3 (Nov 12–18):** low-cost open-source robot arm for a pilot; robotics labs in Florianópolis; invite developers; business one-pager; Solana ecosystem grants (e.g. Superteam Brasil); robot pays on its own with a daily budget (x402)
 
 ## Working with the owner
 
@@ -97,3 +106,4 @@ If you add a new file the site needs, also add it to the `cp` line in the workfl
 - Before pushing, test what you can and say plainly what was and wasn't tested.
 - Don't add names of other people from the house to the repo, docs or posts.
 - Public-facing copy (page, README, posts) is in English; conversation is in Spanish.
+- She builds and presents the project alone: no joint demos or partnerships with other projects.

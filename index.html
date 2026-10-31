@@ -1,147 +1,24 @@
 <meta charset="utf-8">
 <title>Isla Skills</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="An app store for robot skills. Each skill is a service a robot calls and pays per use, in USDC on Solana, with x402.">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>
-/* Layout: one community robot at the center of the house — vote panel, robot bay, skill store, live ledger */
-:root{
-  --bg:#E9F1ED; --panel:#FFFFFF; --ink:#10251E; --muted:#557064; --line:#CFDDD6;
-  --accent:#B9800F; --accent-soft:#F6E9C9; --accent-ink:#1E1503; --ok:#1C7A55; --chip:#E1EBE6; --code:#F3F7F5;
-  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
-  --body:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0B1813; --panel:#11231C; --ink:#E5EFEA; --muted:#8FA99D; --line:#21392F;
-  --accent:#E9B65C; --accent-soft:#2E2914; --accent-ink:#1E1503; --ok:#5BCB9A; --chip:#18302A; --code:#0E1D17; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0B1813; --panel:#11231C; --ink:#E5EFEA; --muted:#8FA99D; --line:#21392F;
-  --accent:#E9B65C; --accent-soft:#2E2914; --accent-ink:#1E1503; --ok:#5BCB9A; --chip:#18302A; --code:#0E1D17; color-scheme:dark}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
-.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-header{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
-h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,5vw,52px);margin:0;line-height:1;letter-spacing:-.01em}
-h1 em{font-style:normal;color:var(--accent)}
-.lede{margin:8px 0 0;color:var(--muted);max-width:60ch;text-wrap:pretty;font-size:16px}
-.mode{font-family:var(--mono);font-size:12px;padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);display:flex;gap:8px;align-items:center}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.dot.live{background:var(--ok)}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
-.grid.grid2{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
-section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-h2{font-family:var(--display);font-weight:600;font-size:19px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-h2 small{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400}
-.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.muted{color:var(--muted)}
-.small{font-size:12.5px}
-
-/* vote */
-.opt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
-.opt.mine{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.leadpill{font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--ink);margin-left:8px;vertical-align:middle}
-.otop{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.otop b{font-weight:600}
-.vbar{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}
-.vbar i{display:block;height:100%;background:var(--accent);transition:width .3s ease}
-.voters{display:flex;flex-wrap:wrap;gap:4px}
-.av{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--chip);color:var(--muted)}
-
-/* robot */
-.robot{display:flex;flex-direction:column;gap:12px}
-.face{display:flex;gap:14px;align-items:center}
-.bot{width:72px;height:72px;flex:none;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;position:relative}
-.bot svg{width:46px;height:46px}
-.bot.work .eye{animation:blink 1.1s infinite}
-@keyframes blink{0%,80%,100%{transform:scaleY(1)}90%{transform:scaleY(.15)}}
-.rname{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1}
-.wallet{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.wbox{background:var(--code);border-radius:8px;padding:10px}
-.wbox b{display:block;font-family:var(--mono);font-size:18px;font-weight:500}
-.addr{font-family:var(--mono);font-size:11.5px;word-break:break-all;color:var(--muted)}
-.status{font-family:var(--mono);font-size:12.5px;padding:9px 11px;border-radius:8px;background:var(--code);min-height:38px}
-.bar{height:5px;background:var(--chip);border-radius:3px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--accent)}
-.installed{display:flex;flex-wrap:wrap;gap:6px}
-.tag{font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--ink);border:1px solid var(--line)}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-
-/* store */
-.skill{border:1px solid var(--line);border-radius:10px;padding:11px 12px;display:grid;grid-template-columns:1fr auto;gap:3px 10px}
-.skill h3{margin:0;font-size:15px;font-weight:600}
-.skill p{margin:0;grid-column:1/-1;font-size:13px;color:var(--muted)}
-.price{font-family:var(--mono);color:var(--accent);font-weight:500;white-space:nowrap}
-.meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-.badge{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--chip);color:var(--muted)}
-.badge.on{background:var(--accent);color:var(--accent-ink)}
-
-/* ledger */
-.ledger{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow:auto}
-.tx{border-bottom:1px solid var(--line);padding-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px}
-.amt{font-family:var(--mono);color:var(--ok);text-align:right}
-.sig{grid-column:1/-1;font-family:var(--mono);font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sig a{color:var(--accent)}
-.pill{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--chip);color:var(--muted);justify-self:end}
-.pill.ok{color:var(--ok)}.pill.err{color:#C2412D}
-
-button{font:inherit;font-size:13.5px;font-weight:600;border-radius:8px;padding:8px 13px;cursor:pointer;border:1px solid var(--line);background:var(--chip);color:var(--ink)}
-button.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-button:disabled{opacity:.5;cursor:not-allowed}
-button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-form .full{grid-column:1/-1}
-.cur{padding:4px 12px;font-size:12.5px}
-.cur.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.openin{display:inline-block;padding:6px 12px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none;margin:4px 6px 0 0}
-.pitch{font-family:var(--display);font-weight:600;font-size:clamp(18px,2.4vw,24px);line-height:1.25;margin:0;text-wrap:balance}
-.how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.how div{font-size:13.5px;color:var(--muted)}
-.how b{display:block;color:var(--ink);font-family:var(--display);font-weight:600;font-size:15px}
-.empty{color:var(--muted);font-size:13px;margin:0}
-.coco{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.steps{grid-column:1/-1;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-.steps .ok{color:var(--ok)}.steps .err{color:#C2412D}
-.steps a{color:var(--accent)}
-.meter{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}
-.meter i{display:block;height:100%;width:0;background:var(--ok)}
-.meter.full i{background:#C2412D}
-input.amt{width:90px}
-@media (max-width:1000px){.grid,.grid.grid2{grid-template-columns:1fr}.how,.coco{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.how,form,.wallet{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){.bot.work .eye{animation:none}.vbar i{transition:none}}
-</style>
+<link rel="stylesheet" href="style.css">
 
 <div class="wrap">
   <header>
     <div>
       <h1>Isla <em>Skills</em></h1>
-      <p class="lede">An app store for robot skills. Robots pay on their own, per use, with x402 on Solana. Coco, the community robot of the IslandDAO house, is the first demo: the community votes on what it learns and every use pays whoever taught it.</p>
+      <p class="lede">An app store for robot skills. Each skill is a service a robot calls and pays <b>per use</b>, in USDC on Solana, with <span class="mono">x402</span>. No human approves anything. Skills come from AI models and from people.</p>
     </div>
-    <div class="mode"><span class="dot" id="modeDot"></span><span id="modeTxt">Checking network…</span></div>
+    <div class="mode"><span class="dot" id="modeDot"></span><span id="modeTxt">Connecting…</span></div>
   </header>
 
-  <div class="grid">
-    <!-- VOTE -->
+  <div class="grid main">
+    <!-- COCO'S EYES -->
     <section>
-      <h2>Community vote <small id="roundTxt">round 1</small></h2>
-      <p class="small muted" style="margin:0">Which skill should the robot learn next? The winner gets installed when the vote closes.</p>
-      <div id="vote" style="display:flex;flex-direction:column;gap:10px"></div>
-      <div class="row">
-        <button class="go" id="closeVote">Close vote &amp; install</button>
-        <span class="small muted" id="voteHint" aria-live="polite">You can vote once per round.</span>
-      </div>
-      <a class="small" id="boardLink" href="https://explorer.solana.com/address/Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu?cluster=devnet" target="_blank" rel="noopener" style="color:var(--accent)" hidden>See all votes on Solana ↗</a>
-    </section>
-
-    <!-- ROBOT -->
-    <section class="robot">
       <div class="face">
         <div class="bot" id="botFace" aria-hidden="true">
           <svg viewBox="0 0 48 48" fill="none">
@@ -153,774 +30,345 @@ input.amt{width:90px}
           </svg>
         </div>
         <div>
-          <div class="lbl">Owned by the community</div>
-          <div class="rname">Coco, the house robot</div>
-          <div class="small muted">IslandDAO V5 · Florianópolis</div>
+          <div class="lbl">Beach Patrol</div>
+          <div class="rname">Coco, the beach robot</div>
+          <div class="small muted">Patrols Florianópolis beaches and pays for every skill it uses.</div>
         </div>
       </div>
-
-      <div class="wallet">
-        <div class="wbox"><span class="lbl">Community treasury</span><b id="bal">5.0000</b><span class="small muted" id="unit">USDC (simulated)</span><span class="small muted" id="feeBal" hidden></span></div>
-        <div class="wbox"><span class="lbl">Paying wallet</span><div class="addr" id="addr">Not connected</div></div>
+      <div class="photo" id="photoBox">
+        <p class="empty" id="photoEmpty">Give Coco a beach photo: take one, upload one, or use this computer's camera as Coco's eyes.</p>
+        <img id="photoImg" alt="Photo Coco will analyze" hidden>
+        <video id="cam" playsinline muted hidden></video>
       </div>
       <div class="row">
-        <button class="go" id="connect">Connect wallet</button>
-        <select id="walletPick" aria-label="Wallet" hidden></select>
-        <span id="fundRow" class="row" hidden>
-          <button id="airdrop">Get devnet SOL</button>
-          <a class="small" id="faucetLink" href="https://faucet.circle.com" target="_blank" rel="noopener" style="color:var(--accent)">Get devnet USDC</a>
-        </span>
+        <label class="btn" for="file">Take or upload a photo</label>
+        <input id="file" type="file" accept="image/*" capture="environment" hidden>
+        <button id="camBtn">Desk robot: use this camera</button>
       </div>
-      <div class="row small" role="radiogroup" aria-label="Who pays">
-        <span class="lbl">Who pays</span>
-        <button class="cur on" id="payerTreasury" role="radio" aria-checked="true" title="Your wallet approves each payment">Treasury (you approve)</button>
-        <button class="cur" id="payerCoco" role="radio" aria-checked="false" title="Coco pays from its own spending wallet with x402, no approval needed">Coco on its own · x402</button>
-      </div>
-      <div class="row small" role="radiogroup" aria-label="Pay in" id="payInRow">
-        <span class="lbl">Pay in</span>
-        <button class="cur on" id="curUSDC" data-cur="USDC" role="radio" aria-checked="true">USDC</button>
-        <button class="cur" id="curX402" data-cur="X402" role="radio" aria-checked="false" title="Gasless USDC through the Ultravioleta DAO x402 facilitator">USDC · x402 (beta)</button>
-        <button class="cur" id="curSOL" data-cur="SOL" role="radio" aria-checked="false">SOL</button>
-      </div>
-      <p class="small muted" id="walletHint" style="margin:0">Connect your Solana wallet (Solflare, Phantom, Backpack…) on devnet. It is the community treasury: it approves payments and tops up Coco's spending wallet.</p>
-      <div class="row small" id="openIn" hidden></div>
-
-      <div>
-        <span class="lbl">Installed skills</span>
-        <div class="installed" id="installed" style="margin-top:6px"></div>
-      </div>
-
-      <div class="status" id="status">Idle. Waiting for a task.</div>
-      <div class="bar"><i id="pb"></i></div>
-      <div class="row">
-        <button class="go" id="runOne">Run next task</button>
-        <button id="auto" aria-pressed="false">Start shift</button>
-      </div>
+      <div class="row small" id="samples" hidden><span class="muted">Or try a beach:</span></div>
+      <button class="go big" id="start" disabled>Start patrol</button>
+      <p class="small muted" id="limits" style="margin:0">The AI costs real money, so each visitor gets 5 photos a day and Coco analyzes up to 100 a day in total.</p>
+      <p class="small" id="msg" aria-live="polite" style="margin:0"></p>
     </section>
 
-    <!-- LEDGER -->
+    <!-- TIMELINE -->
     <section>
-      <h2>Payments <small id="lcount">0 tx</small></h2>
-      <div class="row small mono">
-        <span>Paid to devs <b id="tPaid">0.0000</b></span>
-        <span class="muted">Runs <b id="tRuns">0</b></span>
-      </div>
-      <div class="ledger" id="ledger"><p class="empty">No payments yet. Run a task to see Coco pay a developer.</p></div>
+      <h2>Patrol timeline <small>each skill: 402 → paid → result</small></h2>
+      <ol class="timeline" id="timeline">
+        <li class="step idle"><b>1 · Photo</b><span class="muted">Coco looks at the beach.</span></li>
+        <li class="step idle"><b>2 · Litter Spotter <span class="kind">AI</span></b><span class="muted">Answers <span class="mono">402 Payment Required</span>. Coco's wallet pays 0.01 USDC. It lists the litter.</span></li>
+        <li class="step idle"><b>3 · Human Reviewer <span class="kind">Person</span></b><span class="muted">Only if the AI isn't sure. A real person answers and is paid 0.005 USDC.</span></li>
+        <li class="step idle"><b>4 · Cleanup Planner <span class="kind">Planner</span></b><span class="muted">Paid 0.002 USDC. Turns the list into a cleanup plan.</span></li>
+      </ol>
+      <div id="result" hidden></div>
     </section>
   </div>
 
-  <section id="cocoBox">
-    <h2>Coco's spending wallet <small>pays on its own with x402</small></h2>
-    <p class="small muted" style="margin:0">With <b>Who pays: Coco on its own</b>, Coco asks the store for a skill, gets a <span class="mono">402 Payment Required</span>, signs the USDC payment with this small wallet and gets the skill. Nobody taps “Confirm”. The x402 facilitator pays the network fee, so Coco needs no SOL. Your wallet (the community treasury) tops it up.</p>
-    <div class="coco">
-      <div class="wbox"><span class="lbl">Coco's address</span><div class="addr" id="cocoAddr">—</div></div>
-      <div class="wbox"><span class="lbl">Coco's balance</span><b id="cocoBal">—</b><span class="small muted">USDC on devnet</span></div>
-      <div class="wbox"><span class="lbl">Spent today</span><b id="cocoSpent">0.0000</b><span class="small muted" id="cocoBudgetTxt">of 1.00 USDC daily budget</span><div class="meter" id="cocoMeter" style="margin-top:6px"><i></i></div></div>
-      <div class="wbox"><span class="lbl">Daily budget</span>
-        <div class="row" style="margin-top:4px"><input class="amt" id="cocoBudget" type="number" min="0.01" max="100" step="0.01" value="1" aria-label="Daily budget in USDC"><span class="small muted">USDC</span></div></div>
-    </div>
-    <div class="row">
-      <input class="amt" id="topAmt" type="number" min="0.01" max="100" step="0.01" value="1" aria-label="Top-up amount in USDC"><span class="small muted">USDC</span>
-      <button class="go" id="topUp">Top up Coco from my wallet</button>
-      <span class="small" id="cocoMsg" aria-live="polite"></span>
-    </div>
-    <p class="small muted" style="margin:0">Coco's key is created in this browser and never leaves it (devnet only, never shown). The budget resets every day. If it runs out, Coco stops and says so.</p>
-  </section>
-
-  <div class="grid grid2">
-    <section>
-      <h2>Skill store <small>price per use</small></h2>
-      <div id="store" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
-    </section>
-    <section>
-      <h2>Publish a skill</h2>
-      <p class="small muted" style="margin:0">New skills enter the next community vote.</p>
-      <form id="pub">
-        <input id="fName" class="full" placeholder="Skill name, e.g. Welcome tour" required maxlength="40">
-        <input id="fDesc" class="full" placeholder="What does it do?" maxlength="80">
-        <input id="fPrice" type="number" step="0.001" min="0.002" placeholder="Price per use" required>
-        <input id="fDev" placeholder="Your name" required maxlength="20">
-        <input id="fWallet" class="full" placeholder="Payout wallet (optional, devnet address)" maxlength="44">
-        <button class="go full" type="submit">Publish skill</button>
-      </form>
-      <p class="small" id="pubMsg" aria-live="polite" style="margin:0"></p>
-    </section>
-  </div>
-
+  <!-- WHO PAYS WHOM -->
   <section>
-    <p class="pitch">Isla Skills is an app store for robot skills. Robots pay on their own, per use, with x402 on Solana.</p>
-    <div class="how">
-      <div><b>Publish</b>Developers list a skill with a price per use and a payout wallet.</div>
-      <div><b>Vote</b>House members vote on which skill Coco learns next.</div>
-      <div><b>Work</b>Coco runs its installed skills as tasks around the house.</div>
-      <div><b>Pay</b>Coco pays the developer on its own for each use, with x402, from a small daily budget the community treasury (any Solana wallet) tops up. 5% stays with the community.</div>
+    <h2>Who pays whom <small>every skill has its own wallet</small></h2>
+    <div class="flow">
+      <div class="wcard payer">
+        <span class="lbl">Coco's wallet · pays</span>
+        <div class="addr" id="cocoAddr">—</div>
+        <b class="mono" id="cocoBal">—</b><span class="small muted">USDC on devnet</span>
+        <div class="meter" id="budgetMeter"><i></i></div>
+        <span class="small muted" id="budgetTxt">Daily budget: 1 USDC</span>
+      </div>
+      <div class="arrow" aria-hidden="true">pays per use →</div>
+      <div class="skills" id="skillCards"></div>
     </div>
-    <p class="small muted" style="margin:0">Prototype for IslandDAO V5. The robot is simulated. With a wallet connected on Solana devnet, payments are real USDC (or SOL) transfers. Without it, they are simulated.</p>
+    <p class="small muted" style="margin:0">Coco never pays itself. Each skill is an independent service: it asks Coco for payment with HTTP <span class="mono">402</span>, Coco's wallet signs it on its own, and the USDC goes straight to the wallet of whoever made the skill. If today's budget runs out, Coco stops.</p>
   </section>
+
+  <!-- NUMBERS -->
+  <section>
+    <h2>Live usage <small>read from Solana devnet, not from this browser</small></h2>
+    <div class="stats">
+      <div><b id="sPhotos">—</b><span>photos analyzed</span></div>
+      <div><b id="sCalls">—</b><span>paid skill calls</span></div>
+      <div><b id="sPaid">—</b><span>USDC paid to skill makers</span></div>
+      <div><b id="sPeople">—</b><span>people paid for reviews</span></div>
+    </div>
+    <a class="small" id="cocoTxs" target="_blank" rel="noopener" hidden>See every payment on Solana Explorer ↗</a>
+  </section>
+
+  <div class="grid two">
+    <section>
+      <h2>Earn by helping robots</h2>
+      <p class="small muted" style="margin:0">When Coco's AI isn't sure what it sees, it asks a person. Answer from anywhere with one tap, and Coco pays you in USDC for each review you do.</p>
+      <a class="openin" href="review.html">Review photos and get paid →</a>
+    </section>
+    <section>
+      <h2>Top up Coco</h2>
+      <p class="small muted" style="margin:0">Coco spends test USDC on Solana devnet. Connect your Solana wallet (Solflare, Phantom, Backpack…) on <b>Devnet</b> to send it some.</p>
+      <div class="row">
+        <select id="walletPick" aria-label="Wallet" hidden></select>
+        <button id="connect">Connect wallet</button>
+        <span class="addr" id="ownerAddr"></span>
+      </div>
+      <div class="row">
+        <input id="topAmt" class="amt" type="number" min="0.01" max="100" step="0.01" value="1" aria-label="USDC to send">
+        <span class="small muted">USDC</span>
+        <button class="go" id="topUp">Send to Coco</button>
+        <a class="small" href="https://faucet.circle.com" target="_blank" rel="noopener">Get devnet USDC</a>
+      </div>
+      <p class="small" id="topMsg" aria-live="polite" style="margin:0"></p>
+      <div class="row small" id="openIn" hidden></div>
+    </section>
+  </div>
+
+  <p class="small muted foot">Prototype for IslandHack v5 · IslandDAO, Florianópolis. Coco is simulated: a phone or laptop camera plays its eyes. Litter Spotter uses Claude (Haiku) with vision. Payments are real USDC transfers on Solana <b>devnet</b> (test money), with x402.</p>
 </div>
 
 <script src="web3.min.js"></script>
-<script>if(!window.solanaWeb3)document.write('<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"><\/script>')</script>
+<script src="wallet.js"></script>
 <script>
-window.addEventListener("error",e=>{const st=document.getElementById("status");if(st)st.textContent="Error: "+e.message});
 const $=id=>document.getElementById(id);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const B58="123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const fake=n=>Array.from({length:n},()=>B58[Math.floor(Math.random()*58)]).join("");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const short=a=>a?a.slice(0,4)+"…"+a.slice(-4):"—";
-const W=window.solanaWeb3;
-const newAddr=()=>W?W.Keypair.generate().publicKey.toBase58():fake(44);
-const EXPLORER=s=>`https://explorer.solana.com/tx/${s}?cluster=devnet`;
-/* Example skills. Fixed payout addresses so payments always go to the same place. */
-const SEED=[
- {id:"1",name:"Serve coffee",desc:"Makes and delivers coffee to the co-working tables.",price:0.002,dev:"ana",wallet:"7EnzRoMpgCYThA4MXHx31d3u3kQzGzcNtJSsEZbzWog5",installed:true},
- {id:"2",name:"Beach cleanup",desc:"Picks up plastic and glass on the beach in front of the house.",price:0.003,dev:"lucas",wallet:"4Zt8pisTsQpRNiv8jcfPKguNLYh25WGxvsNEZy3GFUc4",installed:false},
- {id:"3",name:"Visitor guide",desc:"Welcomes new attendees and walks them to their room.",price:0.002,dev:"mariana",wallet:"6baT8qi1o2wTNPDfrXDUtyiFyP66pwNra9VLPKBV25yk",installed:false},
- {id:"4",name:"Demo Day timer",desc:"Keeps pitch time and rings at 3 minutes.",price:0.004,dev:"pedro",wallet:"D2kBeezt5apTAKengXQRuZtsjao1bDCgXSYzBscpR88s",installed:false}
-];
-let skills=SEED.map(x=>({...x,runs:0,earned:0}));
-// Example votes, only used when the page can't reach Solana (simulated mode)
-let votes={"2":5,"3":3,"4":2},voters={"2":["dean","sol","mia","ravi","jo"],"3":["leo","kim","tom"],"4":["ava","max"]};
-let voted=false,myVote=null,round=1,nextId=5,taskIdx=0,busy=false,auto=false;
-/* The community board lives on Solana devnet: every vote, new skill and closed round is a
-   memo signed by a wallet, sent with a 0-SOL transfer to BOARD so it can be listed later. */
-const BOARD="Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu";
-const MEMO_PROGRAM="MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr", TAG="isla:v1:";
-let boardMode=false,boardCache=new Map(),boardLoading=false,boardLink=null;
-let txs=[],totals={paid:0,runs:0};
+const usdc=u=>(Number(u)/1e6).toLocaleString("en-US",{maximumFractionDigits:4});
+const SIG=/^[1-9A-HJ-NP-Za-km-z]{43,100}$/, ADDR=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const txUrl=s=>`https://explorer.solana.com/tx/${s}?cluster=devnet`;
+const addrUrl=a=>`https://explorer.solana.com/address/${a}?cluster=devnet`;
+const txLink=(s,t="Explorer ↗")=>SIG.test(s||"")?`<a href="${txUrl(s)}" target="_blank" rel="noopener">${t}</a>`:"";
+const addrLink=a=>ADDR.test(a||"")?`<a href="${addrUrl(a)}" target="_blank" rel="noopener">${short(a)}</a>`:esc(a||"—");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const W=window.solanaWeb3, IW=window.IslaWallet;
+let state=null,photo=null,busy=false,stream=null;
 
-/* ---------- USDC on devnet (Circle) without extra libraries ---------- */
-const USDC_MINT="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", USDC_DECIMALS=6;
-const TOKEN_PROGRAM="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", ATA_PROGRAM="ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
-let cur="USDC";
-const pk=a=>new W.PublicKey(a);
-function ataOf(ownerPk){
-  return W.PublicKey.findProgramAddressSync([ownerPk.toBuffer(),pk(TOKEN_PROGRAM).toBuffer(),pk(USDC_MINT).toBuffer()],pk(ATA_PROGRAM))[0];
-}
-function createAtaIdempotentIx(payer,ata,ownerPk){
-  return new W.TransactionInstruction({programId:pk(ATA_PROGRAM),data:Uint8Array.from([1]),keys:[
-    {pubkey:payer,isSigner:true,isWritable:true},{pubkey:ata,isSigner:false,isWritable:true},
-    {pubkey:ownerPk,isSigner:false,isWritable:false},{pubkey:pk(USDC_MINT),isSigner:false,isWritable:false},
-    {pubkey:W.SystemProgram.programId,isSigner:false,isWritable:false},{pubkey:pk(TOKEN_PROGRAM),isSigner:false,isWritable:false}]});
-}
-function transferCheckedIx(src,dst,ownerPk,amount){
-  const data=new Uint8Array(10);data[0]=12;
-  let a=BigInt(amount);for(let i=0;i<8;i++){data[1+i]=Number(a&255n);a>>=8n}
-  data[9]=USDC_DECIMALS;
-  return new W.TransactionInstruction({programId:pk(TOKEN_PROGRAM),data,keys:[
-    {pubkey:src,isSigner:false,isWritable:true},{pubkey:pk(USDC_MINT),isSigner:false,isWritable:false},
-    {pubkey:dst,isSigner:false,isWritable:true},{pubkey:ownerPk,isSigner:true,isWritable:false}]});
-}
-async function usdcBalance(ownerPk){
-  try{const r=await conn.getTokenAccountBalance(ataOf(ownerPk));return Number(r.value.uiAmount||0)}catch(e){return 0}
-}
-/* ---------- x402: gasless USDC through the Ultravioleta DAO facilitator ----------
-   The wallet only signs. The facilitator checks the payment, adds its signature as
-   fee payer, and sends it to Solana, so the payer needs no SOL for fees. */
-const FACILITATOR="https://facilitator.ultravioletadao.xyz", X402_NETWORK="solana-devnet";
-const COMPUTE_BUDGET="ComputeBudget111111111111111111111111111111";
-let facFeePayer=null;
-async function loadFacilitator(){
-  if(facFeePayer)return facFeePayer;
-  const r=await withTimeout(fetch(FACILITATOR+"/supported"),8000);
-  const d=await r.json();const kinds=Array.isArray(d.kinds)?d.kinds:Array.isArray(d)?d:[];
-  const k=kinds.find(x=>x.network===X402_NETWORK&&x.scheme==="exact"&&x.x402Version===1);
-  if(!k||!k.extra||!k.extra.feePayer)throw new Error("X402_UNSUPPORTED");
-  facFeePayer=k.extra.feePayer;return facFeePayer;
-}
-function cuLimitIx(units){const d=new Uint8Array(5);d[0]=2;new DataView(d.buffer).setUint32(1,units,true);return new W.TransactionInstruction({programId:pk(COMPUTE_BUDGET),keys:[],data:Buffer.from(d)})}
-function cuPriceIx(micro){const d=new Uint8Array(9);d[0]=3;new DataView(d.buffer).setBigUint64(1,BigInt(micro),true);return new W.TransactionInstruction({programId:pk(COMPUTE_BUDGET),keys:[],data:Buffer.from(d)})}
-async function facPost(path,body){
-  const r=await withTimeout(fetch(FACILITATOR+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),45000);
+/* ---------- server status ---------- */
+async function api(path,opts={}){
+  const r=await fetch(path,{...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})}});
   let j=null;try{j=await r.json()}catch(e){}
-  if(!r.ok)throw new Error("X402: "+((j&&(j.error||j.invalidReason||j.errorReason))||("HTTP "+r.status)));
-  return j||{};
+  return {status:r.status,ok:r.ok,json:j||{},headers:r.headers};
 }
-async function payX402(s,units){
-  const feePayer=pk(await loadFacilitator());
-  const dev=pk(s.wallet),src=ataOf(owner),dst=ataOf(dev);
-  const t=new W.Transaction().add(cuLimitIx(60000),cuPriceIx(1));
-  if(!(await conn.getAccountInfo(dst)))t.add(createAtaIdempotentIx(owner,dst,dev)); // first payment to this developer opens their USDC account
-  t.add(transferCheckedIx(src,dst,owner,units));
-  t.feePayer=feePayer;t.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
-  $("status").textContent=`Approve the payment in ${walletName()}. The x402 facilitator pays the network fee.`;
-  const signed=await wallet().signTransaction(t);
-  const b64=signed.serialize({requireAllSignatures:false,verifySignatures:false}).toString("base64");
-  const reqs={scheme:"exact",network:X402_NETWORK,maxAmountRequired:String(units),resource:location.origin+"/skills/"+encodeURIComponent(s.id),
-    description:"Isla Skills: "+s.name,mimeType:"application/json",payTo:s.wallet,maxTimeoutSeconds:60,asset:USDC_MINT,extra:{feePayer:feePayer.toBase58()}};
-  const body={x402Version:1,paymentPayload:{x402Version:1,scheme:"exact",network:X402_NETWORK,payload:{transaction:b64}},paymentRequirements:reqs};
-  $("status").textContent="Facilitator is checking the payment…";
-  const v=await facPost("/verify",body);
-  if(v.isValid===false)throw new Error("X402: "+(v.invalidReason||"payment not valid"));
-  $("status").textContent="Facilitator is sending the payment to Solana…";
-  const st=await facPost("/settle",body);
-  if(!st.success)throw new Error("X402: "+(st.errorReason||"settlement failed"));
-  return st.transaction||st.transactionHash||st.txHash;
-}
-
-function setCur(c){
-  cur=c;
-  ["USDC","X402","SOL"].forEach(k=>{const b=$("cur"+k);b.classList.toggle("on",k===c);b.setAttribute("aria-checked",k===c)});
-  setMode();
-}
-$("curUSDC").onclick=()=>setCur("USDC");$("curX402").onclick=()=>setCur("X402");$("curSOL").onclick=()=>setCur("SOL");
-const asset=()=>cur==="SOL"?"SOL":"USDC";
-
-/* ---------- wallets: any Solana wallet (Wallet Standard), plus older injected ones ---------- */
-let live=false,netOk=false,conn=null,owner=null,simBal=5;
-/* Wallet Standard: every compatible wallet (Solflare, Phantom, Backpack, Glow, Brave…) announces
-   itself with these two browser events, so no wallet is hard-coded here. */
-const CHAIN="solana:devnet",stdWallets=[],stdAdapters=new Map();
-function addStdWallet(w){
+async function loadStatus(){
   try{
-    if(!w||stdWallets.includes(w))return;
-    const f=w.features||{};
-    const solana=(w.chains||[]).some(c=>String(c).startsWith("solana:"));
-    if(!solana||!f["standard:connect"]||!(f["solana:signTransaction"]||f["solana:signAndSendTransaction"]))return;
-    stdWallets.push(w);walletsChanged();
-  }catch(e){}
+    const r=await api("/api/coco");
+    if(!r.ok)throw new Error("offline");
+    state=r.json;
+  }catch(e){state=null}
+  renderStatus();
 }
-const stdApi={register:(...ws)=>{ws.forEach(addStdWallet);return()=>{}}};
-window.addEventListener("wallet-standard:register-wallet",e=>{try{e.detail(stdApi)}catch(err){}});
-try{window.dispatchEvent(new CustomEvent("wallet-standard:app-ready",{detail:stdApi}))}catch(e){}
-function b58encode(bytes){
-  let n=0n;for(const b of bytes)n=n*256n+BigInt(b);
-  let s="";while(n>0n){s=B58[Number(n%58n)]+s;n/=58n}
-  for(const b of bytes){if(b!==0)break;s="1"+s}
-  return s;
+function renderStatus(){
+  const live=state&&state.ready&&state.ready.coco;
+  $("modeDot").classList.toggle("live",!!live);
+  $("modeTxt").textContent=!state?"Skill store offline":!live?"Coco's wallet not set up":!state.ready.ai?"AI key missing on the server":"Live · Solana devnet";
+  if(!state)return;
+  $("cocoAddr").innerHTML=state.address?addrLink(state.address):"not set up";
+  $("cocoBal").textContent=state.usdcUnits==null?"—":usdc(state.usdcUnits);
+  const b=state.budget,p=Math.min(100,b.spentUnits/b.limitUnits*100);
+  $("budgetMeter").firstElementChild.style.width=p+"%";$("budgetMeter").classList.toggle("full",p>=100);
+  $("budgetTxt").textContent=`Today: ${usdc(b.spentUnits)} of ${usdc(b.limitUnits)} USDC budget`;
+  const ph=state.photos;
+  $("limits").textContent=`The AI costs real money: ${ph.perVisitor} photos per visitor a day (you've used ${ph.yours}), ${ph.limit} for everyone (${ph.today} used today).`;
+  if(state.address){$("cocoTxs").href=addrUrl(state.address);$("cocoTxs").hidden=false}
+  renderSkills();
 }
-/* Gives a Wallet Standard wallet the same shape as the older providers (connect, signTransaction…). */
-function stdAdapter(w){
-  if(stdAdapters.has(w))return stdAdapters.get(w);
-  const f=w.features;let acct=null;
-  const pickAcct=accs=>(accs||[]).find(a=>!a.chains||a.chains.some(c=>String(c).startsWith("solana:")))||null;
-  const bytesOf=t=>t.serialize({requireAllSignatures:false,verifySignatures:false});
-  const a={
-    publicKey:null,
-    async connect(opts){
-      const r=await f["standard:connect"].connect(opts&&opts.onlyIfTrusted?{silent:true}:undefined);
-      acct=pickAcct(r&&r.accounts&&r.accounts.length?r.accounts:w.accounts);
-      if(!acct)throw new Error("no account");
-      a.publicKey=new W.PublicKey(acct.address);return{publicKey:a.publicKey};
-    },
-    async disconnect(){acct=null;a.publicKey=null;if(f["standard:disconnect"])await f["standard:disconnect"].disconnect()},
-    on(ev,cb){
-      if(ev!=="accountChanged"||!f["standard:events"])return;
-      f["standard:events"].on("change",ch=>{if(!ch||!ch.accounts)return;acct=pickAcct(ch.accounts);a.publicKey=acct?new W.PublicKey(acct.address):null;cb(a.publicKey)});
-    }
-  };
-  if(f["solana:signTransaction"])a.signTransaction=async t=>{
-    const[out]=await f["solana:signTransaction"].signTransaction({account:acct,transaction:bytesOf(t),chain:CHAIN});
-    return W.Transaction.from(out.signedTransaction);
-  };
-  if(f["solana:signAndSendTransaction"])a.signAndSendTransaction=async t=>{
-    const[out]=await f["solana:signAndSendTransaction"].signAndSendTransaction({account:acct,transaction:bytesOf(t),chain:CHAIN});
-    return{signature:typeof out.signature==="string"?out.signature:b58encode(out.signature)};
-  };
-  stdAdapters.set(w,a);return a;
+let stats=null;
+async function loadStats(){
+  try{const r=await api("/api/stats");if(r.ok&&r.json.ready)stats=r.json}catch(e){}
+  if(!stats)return;
+  $("sPhotos").textContent=stats.photos;$("sCalls").textContent=stats.paidCalls;
+  $("sPaid").textContent=usdc(stats.paidUnits);$("sPeople").textContent=stats.reviewers;
+  renderSkills();
 }
-/* Wallet Standard wallets first; older injected providers only if the same wallet isn't already listed. */
-function detectWallets(){
-  const out=stdWallets.map(w=>({key:"std:"+w.name,name:w.name,p:stdAdapter(w)}));
-  const has=n=>out.some(x=>x.name.toLowerCase().includes(n));
-  const ph=window.phantom&&window.phantom.solana;
-  if(!has("solflare")&&window.solflare&&window.solflare.isSolflare)out.push({key:"solflare",name:"Solflare",p:window.solflare});
-  if(!has("phantom")&&ph&&ph.isPhantom&&!ph.isBraveWallet)out.push({key:"phantom",name:"Phantom",p:ph});
-  if(!has("backpack")&&window.backpack&&(window.backpack.isBackpack||window.backpack.connect))out.push({key:"backpack",name:"Backpack",p:window.backpack});
-  if(!has("brave")&&window.braveSolana)out.push({key:"brave",name:"Brave Wallet",p:window.braveSolana});
-  if(!out.length&&window.solana&&window.solana.connect)out.push({key:"other",name:window.solana.isSolflare?"Solflare":window.solana.isPhantom?"Phantom":"Solana wallet",p:window.solana});
-  return out;
-}
-let ready=false;
-function walletsChanged(){
-  if(!ready)return;
-  showOwner();
-  if(detectWallets().length)$("openIn").hidden=true;
-}
-let chosenKey=null;
-const pickedWallet=()=>{const l=detectWallets();return l.find(x=>x.key===chosenKey)||l[0]||null};
-const wallet=()=>{const w=pickedWallet();return w?w.p:null};
-const walletName=()=>{const w=pickedWallet();return w?w.name:"wallet"};
-const pubkeyFrom=(r,p)=>(r&&r.publicKey)||(p&&p.publicKey)||null;
-function renderWalletPick(){
-  const l=detectWallets(),sel=$("walletPick");
-  sel.hidden=l.length<2||!!owner;
-  sel.innerHTML=l.map(x=>`<option value="${x.key}" ${pickedWallet()&&x.key===pickedWallet().key?"selected":""}>${x.name}</option>`).join("");
-}
-const withTimeout=(pr,ms)=>Promise.race([pr,new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),ms))]);
-function setMode(){
-  live=netOk&&!!owner;
-  $("modeDot").classList.toggle("live",live);
-  $("modeTxt").textContent=live?"Live · Solana devnet":netOk?"Devnet ready · connect wallet":"Simulated payments";
-  $("unit").textContent=live?`${asset()} on devnet`:`${asset()} (simulated)`;
-  $("feeBal").hidden=!(live&&cur!=="SOL");
-  $("fundRow").hidden=!live;
-  refreshBal();
-}
-async function initNetwork(){
-  if(W){
-    try{
-      conn=new W.Connection("https://api.devnet.solana.com","confirmed");
-      await withTimeout(conn.getLatestBlockhash(),6000);
-      netOk=true;
-    }catch(e){netOk=false}
-  }
-  ready=true;
-  setTimeout(()=>{if(!detectWallets().length){$("openIn").innerHTML=`<span class="muted">On your phone? </span>${openInLinks()}`;$("openIn").hidden=false}},1500);
-  if(netOk){$("voteHint").textContent="Votes are saved on Solana devnet. One wallet, one vote.";$("boardLink").hidden=false;loadBoard();setInterval(loadBoard,20000)}
-  if(!netOk)$("walletHint").textContent="Can't reach Solana devnet from this browser, so payments are simulated. In Brave, turn off Shields for this site and reload.";
-  setMode();
-  showOwner();
-  const p=wallet();
-  if(p){
-    try{const r=await withTimeout(p.connect({onlyIfTrusted:true}),1500);const k=pubkeyFrom(r,p);if(k){owner=k;watchAccount(p);showOwner();setMode()}}catch(e){}
-  }
-  renderCoco();
-}
-/* Follow account switches inside the wallet (once per wallet). */
-const watched=new WeakSet();
-function watchAccount(p){
-  if(!p||watched.has(p))return;watched.add(p);
-  try{p.on&&p.on("accountChanged",k=>{if(wallet()!==p)return;owner=k||null;showOwner();setMode()})}catch(e){}
-}
-$("walletPick").onchange=e=>{chosenKey=e.target.value;showOwner()};
-function showOwner(){
-  renderWalletPick();
-  if(boardMode)applyBoard([...boardCache.values()].filter(e=>e.data).sort((a,b)=>a.slot-b.slot||0));
-  $("addr").textContent=owner?owner.toBase58():"Not connected";
-  $("connect").textContent=owner?"Disconnect":(wallet()?"Connect "+walletName():"Connect wallet");
-}
-/* Messages show where the person tapped, and in Coco's status box. */
-function say(where,html){$("status").innerHTML=html;if(where&&$(where))$(where).innerHTML=html}
-/* Phone browsers have no wallet: these links reopen this page inside the wallet app. */
-function openInLinks(){
-  const u=encodeURIComponent(location.origin+location.pathname),r=encodeURIComponent(location.origin);
-  return `<a class="openin" href="https://solflare.com/ul/v1/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Solflare</a><a class="openin" href="https://phantom.app/ul/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Phantom</a><a class="openin" href="https://backpack.app/ul/v1/browse/${u}?ref=${r}" target="_blank" rel="noopener">Open in Backpack</a>`;
-}
-async function connectWallet(where){
-  const p=wallet();
-  if(!p){say(where,`No Solana wallet in this browser. Open this page inside your wallet app:<br>${openInLinks()}`);return false}
-  if(!netOk){say(where,"Can't reach Solana devnet. In Brave, turn off Shields for this site and reload.");return false}
-  try{
-    const r=await p.connect();owner=pubkeyFrom(r,p);if(!owner)throw new Error("no key");watchAccount(p);
-    showOwner();setMode();say(where,`${esc(walletName())} connected. Make sure it's set to Solana <b>Devnet</b>.`);return true;
-  }catch(e){say(where,`Connection cancelled in ${esc(walletName())}.`);return false}
-}
-$("connect").onclick=async()=>{
-  if(owner){try{await wallet().disconnect()}catch(e){}owner=null;showOwner();return setMode()}
-  await connectWallet(null);
-};
-async function refreshBal(){
-  if(!live)return $("bal").textContent=simBal.toFixed(4);
-  try{
-    const sol=(await conn.getBalance(owner))/1e9;
-    if(cur!=="SOL"){
-      $("bal").textContent=(await usdcBalance(owner)).toFixed(4);
-      $("feeBal").textContent=cur==="X402"?" · network fees paid by the x402 facilitator":` · ${sol.toFixed(4)} SOL for network fees`;
-    }else $("bal").textContent=sol.toFixed(4);
-  }catch(e){}
-}
-$("airdrop").onclick=async()=>{
-  const b=$("airdrop");b.disabled=true;$("status").textContent="Requesting 1 devnet SOL…";
-  try{const sig=await conn.requestAirdrop(owner,1e9);await conn.confirmTransaction(sig,"confirmed");$("status").textContent="Received 1 devnet SOL.";refreshBal()}
-  catch(e){$("status").innerHTML=`Airdrop limit reached. Use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a> with your wallet address.`}
-  b.disabled=false;
-};
-
-/* ---------- sending a transaction with the connected wallet ---------- */
-async function sendTx(t){
-  const bh=await conn.getLatestBlockhash();
-  t.feePayer=owner;t.recentBlockhash=bh.blockhash;
-  const w=wallet();let sig;
-  if(w.signAndSendTransaction){
-    const r=await w.signAndSendTransaction(t);
-    sig=typeof r==="string"?r:r.signature;
-  }else{
-    const signed=await w.signTransaction(t);
-    sig=await conn.sendRawTransaction(signed.serialize());
-  }
-  await conn.confirmTransaction({signature:sig,blockhash:bh.blockhash,lastValidBlockHeight:bh.lastValidBlockHeight},"confirmed");
-  return sig;
-}
-
-/* ---------- community board on Solana ---------- */
-function parseMemo(m){
-  const i=(m||"").indexOf(TAG);if(i<0)return null;
-  let txt=m.slice(i+TAG.length);const j=txt.lastIndexOf("}");if(j<0)return null;
-  try{const d=JSON.parse(txt.slice(0,j+1));return d&&typeof d==="object"?d:null}catch(e){return null}
-}
-const okStr=(v,max)=>typeof v==="string"&&v.trim().length>0&&v.length<=max;
-function validPk(a){try{return typeof a==="string"&&!!new W.PublicKey(a)}catch(e){return false}}
-async function loadBoard(){
-  if(!netOk||boardLoading)return;boardLoading=true;
-  try{
-    const sigs=await conn.getSignaturesForAddress(pk(BOARD),{limit:500});
-    const fresh=sigs.filter(x=>!x.err&&x.memo&&x.memo.includes(TAG)&&!boardCache.has(x.signature));
-    for(let i=0;i<fresh.length;i+=40){
-      const part=fresh.slice(i,i+40);
-      const res=await conn.getTransactions(part.map(x=>x.signature),{maxSupportedTransactionVersion:0,commitment:"confirmed"});
-      res.forEach((r,k)=>{
-        if(!r)return;const m=r.transaction.message;const keys=m.staticAccountKeys||m.accountKeys;
-        boardCache.set(part[k].signature,{sig:part[k].signature,slot:part[k].slot,time:part[k].blockTime||0,signer:keys[0].toBase58(),data:parseMemo(part[k].memo)});
-      });
-    }
-    const order=new Map(sigs.map((x,i)=>[x.signature,i]));
-    const evts=[...boardCache.values()].filter(e=>e.data&&order.has(e.sig)).sort((a,b)=>order.get(b.sig)-order.get(a.sig));
-    applyBoard(evts);boardMode=true;
-  }catch(e){console.error("Board load failed",e)}
-  boardLoading=false;
-}
-function applyBoard(evts){
-  const prev={};skills.forEach(x=>prev[x.id]={runs:x.runs,earned:x.earned});
-  const sk=SEED.map(x=>({...x}));let r=1,ballots={};
-  const tally=()=>{const t={};Object.values(ballots).forEach(id=>t[id]=(t[id]||0)+1);return t};
-  for(const e of evts){
-    const d=e.data;
-    if(d.t==="skill"){
-      const price=Number(d.p);
-      if(!okStr(d.n,40)||!(price>=0.002&&price<=1)||!validPk(d.w))continue;
-      const id="c"+e.sig.slice(0,10);
-      if(!sk.some(x=>x.id===id))sk.push({id,name:d.n.trim(),desc:okStr(d.d,80)?d.d.trim():"New skill from the community.",price,dev:okStr(d.dev,20)?d.dev.trim().toLowerCase():short(e.signer),wallet:d.w,installed:false,chainSig:e.sig});
-    }else if(d.t==="vote"&&d.r===r){
-      const target=sk.find(x=>x.id===String(d.s)&&!x.installed);
-      if(target)ballots[e.signer]=target.id; // one wallet, one vote: the latest one counts
-    }else if(d.t==="close"&&d.r===r){
-      const t=tally(),cands=sk.filter(x=>!x.installed);
-      if(!cands.length||!Object.keys(t).length)continue;
-      const win=cands.reduce((a,x)=>(t[x.id]||0)>(t[a.id]||0)?x:a,cands[0]);
-      win.installed=true;r++;ballots={};
-    }
-  }
-  skills=sk.map(x=>({...x,runs:prev[x.id]?.runs||0,earned:prev[x.id]?.earned||0}));
-  round=r;votes=tally();voters={};
-  const me=owner?owner.toBase58():null;
-  Object.entries(ballots).forEach(([w,id])=>(voters[id]=voters[id]||[]).push(w===me?"you":short(w)));
-  myVote=me?ballots[me]||null:null;voted=!!myVote;
-  renderAll();
-}
-const NO_SOL_MSG=()=>`This wallet has no devnet SOL for the network fee. Make sure it's on <b>Devnet</b>, then tap <b>Get devnet SOL</b> above (or use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a>).`;
-async function hasFeeSol(){try{return (await conn.getBalance(owner))>=10000}catch(e){return true}}
-async function postBoard(data,pending,where){
-  if(!live&&!(await connectWallet(where)))return null;
-  if(!(await hasFeeSol())){say(where,NO_SOL_MSG());return null}
-  const t=new W.Transaction().add(
-    new W.TransactionInstruction({programId:pk(MEMO_PROGRAM),keys:[{pubkey:owner,isSigner:true,isWritable:false}],data:Buffer.from(TAG+JSON.stringify(data),"utf8")}),
-    W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(BOARD),lamports:0})
-  );
-  say(where,esc(pending));
-  try{
-    const sig=await sendTx(t);boardLink=sig;
-    await loadBoard();return sig;
-  }catch(e){
-    const m=String(e&&e.message||e);console.error("Board write failed",e);
-    say(where,/reject|denied|cancel/i.test(m)?`Cancelled in ${esc(walletName())}.`
-      :/expired|block height exceeded/i.test(m)?`The transaction never reached Solana devnet. Usually the wallet is on <b>Mainnet</b> or has no devnet SOL. Switch ${esc(walletName())} to <b>Devnet</b>, tap <b>Get devnet SOL</b>, and try again.`
-      :/blockhash|not found/i.test(m)?`Your wallet seems to be on Mainnet. Switch ${esc(walletName())} to <b>Devnet</b> and try again.`
-      :/insufficient|no record of a prior credit|debit an account/i.test(m)?`You need a little free devnet SOL for the network fee. Tap <b>Get devnet SOL</b> above, or use <a href="https://faucet.solana.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.solana.com</a>.`
-      :"Couldn't save on Solana: "+esc(m.slice(0,140)));
-    return null;
-  }
-}
-const txLink=(sig,label)=>`<a href="${EXPLORER(sig)}" target="_blank" rel="noopener" style="color:var(--accent)">${label}</a>`;
-
-/* ---------- vote ---------- */
-function candidates(){return skills.filter(s=>!s.installed)}
-function renderVote(){
-  const c=candidates(),total=c.reduce((a,s)=>a+(votes[s.id]||0),0)||1;
-  const top=Math.max(0,...c.map(s=>votes[s.id]||0));
-  $("roundTxt").textContent="round "+round;
-  if(!c.length){$("vote").innerHTML='<p class="empty">Every skill is installed. Publish a new one to start a vote.</p>';$("closeVote").disabled=true;return}
-  $("closeVote").disabled=false;
-  $("vote").innerHTML=c.map(s=>{const v=votes[s.id]||0;return`
-    <div class="opt${myVote===s.id?" mine":""}">
-      <div class="otop"><span><b>${esc(s.name)}</b>${v===top&&v>0?'<span class="leadpill">Leading</span>':""}</span><span class="mono small">${v} vote${v==1?"":"s"}</span></div>
-      <div class="vbar"><i style="width:${v/total*100}%"></i></div>
-      <div class="row" style="justify-content:space-between">
-        <div class="voters">${(voters[s.id]||[]).slice(-6).map(n=>`<span class="av">${esc(n)}</span>`).join("")}</div>
-        <button data-vote="${s.id}" ${voted?"disabled":""}>${myVote===s.id?"Your vote":"Vote"}</button>
-      </div>
+function renderSkills(){
+  if(!state)return;
+  $("skillCards").innerHTML=state.skills.map(s=>{
+    const st=stats&&stats.perSkill[s.id];
+    return `<div class="wcard">
+      <span class="lbl">${esc(s.name)} <span class="kind">${esc(s.kind)}</span></span>
+      <span class="small muted">${esc(s.does)}</span>
+      <span class="small"><b class="mono">${usdc(s.price)} USDC</b> per use → ${ADDR.test(s.payTo)?addrLink(s.payTo):"<i>whoever answers</i>"}</span>
+      <span class="small muted mono">${st?`${st.calls} paid · ${usdc(st.units)} USDC earned`:""}</span>
     </div>`}).join("");
-  document.querySelectorAll("[data-vote]").forEach(b=>b.onclick=async()=>{
-    const id=b.dataset.vote;
-    if(boardMode){
-      b.disabled=true;
-      const sig=await postBoard({t:"vote",r:round,s:id},`Approve your vote in ${walletName()}. It is saved on Solana devnet.`,"voteHint");
-      if(sig){$("voteHint").innerHTML=`Vote saved on Solana. ${txLink(sig,"See it on Explorer")}`;$("status").textContent="Vote saved. One wallet, one vote."}
-      else b.disabled=false;
-      return;
-    }
-    votes[id]=(votes[id]||0)+1;(voters[id]=voters[id]||[]).push("you");voted=true;myVote=id;
-    $("voteHint").textContent="Vote counted. Close the vote to install the winner.";renderVote();
-  });
 }
-$("closeVote").onclick=async()=>{
-  const c=candidates();if(!c.length)return;
-  if(boardMode){
-    if(!Object.values(votes).some(v=>v>0)){$("status").textContent="No votes yet in this round.";return}
-    const before=new Set(installed().map(x=>x.id));
-    const sig=await postBoard({t:"close",r:round},`Approve closing round ${round} in ${walletName()}.`,"voteHint");
-    if(sig){
-      const win=installed().find(x=>!before.has(x.id));
-      $("voteHint").innerHTML=`${win?`Installed “${esc(win.name)}”.`:"Round closed."} ${txLink(sig,"See it on Explorer")}`;
-      if(win)$("status").textContent=`Learned a new skill: ${win.name}`;
-    }
-    return;
-  }
-  const win=c.reduce((a,s)=>(votes[s.id]||0)>(votes[a.id]||0)?s:a,c[0]);
-  win.installed=true;delete votes[win.id];delete voters[win.id];
-  round++;voted=false;myVote=null;$("voteHint").textContent=`Installed “${win.name}”. New round open.`;
-  $("status").textContent=`Learned a new skill: ${win.name}`;
-  renderAll();
+
+/* ---------- photo: upload, camera, samples ---------- */
+function shrink(src){ // max 1024 px JPEG, so the photo is small and fast
+  const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight,k=Math.min(1,1024/Math.max(w,h));
+  const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+  c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",0.8);
+}
+function setPhoto(dataUrl){
+  photo=dataUrl;$("photoImg").src=dataUrl;$("photoImg").hidden=false;$("photoEmpty").hidden=true;
+  $("start").disabled=busy;$("msg").textContent="";
+}
+$("file").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;stopCam();
+  const img=new Image();img.onload=()=>{setPhoto(shrink(img));URL.revokeObjectURL(img.src)};
+  img.onerror=()=>{$("msg").textContent="That file isn't a photo Coco can read. Try a JPEG or PNG."};
+  img.src=URL.createObjectURL(f);
 };
-
-/* ---------- robot ---------- */
-function installed(){return skills.filter(s=>s.installed)}
-const phases=["Planning route","Moving","Working","Checking result"];
-function animate(s,steps,done){
-  $("botFace").classList.add("work");
-  const t0=Date.now(),dur=Math.max(1700,steps.length*450),n=steps.length;
-  (function tick(){
-    const p=Math.min(1,(Date.now()-t0)/dur);$("pb").style.width=p*100+"%";
-    $("status").textContent=`${steps[Math.min(n-1,Math.floor(p*n))]}: ${s.name}`;
-    if(p<1)return setTimeout(tick,60);
-    done();
-  })();
-}
-function runTask(){
-  if(busy)return;const list=installed();if(!list.length)return;
-  const s=list[taskIdx++%list.length];
-  busy=true;$("runOne").disabled=true;
-  if(payer==="coco")return cocoTask(s);
-  animate(s,phases,()=>pay(s));
-}
-function stopShift(){auto=false;$("auto").textContent="Start shift";$("auto").setAttribute("aria-pressed","false")}
-function endTask(){
-  busy=false;$("runOne").disabled=false;$("botFace").classList.remove("work");$("pb").style.width="0";
-  refreshBal();renderLedger();renderStore();renderCoco();
-  if(auto)setTimeout(runTask,700);
-}
-async function pay(s){
-  const devAmt=+(s.price*0.95).toFixed(6),fee=+(s.price-devAmt).toFixed(6);
-  const tx={skill:s.name,dev:s.dev,amt:devAmt,sig:null,status:"signing",live};
-  txs.unshift(tx);renderLedger();
-  $("status").textContent=`Paying ${s.price.toFixed(3)} to ${s.dev}…`;
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("cam").hidden=true;$("camBtn").textContent="Desk robot: use this camera"}
+$("camBtn").onclick=async()=>{
+  if(stream)return stopCam();
   try{
-    if(live){
-      const t=new W.Transaction();
-      if(cur==="X402"){
-        if(await usdcBalance(owner)<devAmt)throw new Error("NO_USDC");
-        tx.sig=await payX402(s,Math.round(devAmt*10**USDC_DECIMALS));
-      }else if(cur==="USDC"){
-        if(!(await hasFeeSol()))throw new Error("NO_SOL");
-        const have=await usdcBalance(owner);
-        if(have<devAmt)throw new Error("NO_USDC");
-        const dev=pk(s.wallet),src=ataOf(owner),dst=ataOf(dev);
-        t.add(createAtaIdempotentIx(owner,dst,dev),transferCheckedIx(src,dst,owner,Math.round(devAmt*10**USDC_DECIMALS)));
-      }else{
-        if(!(await hasFeeSol()))throw new Error("NO_SOL");
-        t.add(W.SystemProgram.transfer({fromPubkey:owner,toPubkey:pk(s.wallet),lamports:Math.round(devAmt*1e9)}));
-      }
-      if(cur!=="X402"){
-        $("status").textContent=`Approve the payment in ${walletName()}: ${devAmt.toFixed(4)} ${asset()} to ${s.dev}`;
-        tx.sig=await sendTx(t);
-      }
-    }else{
-      if(simBal<s.price)throw new Error("empty");
-      await new Promise(r=>setTimeout(r,600));simBal-=s.price;tx.sig=fake(88);
-    }
-    tx.status="confirmed";tx.cur=!live?"USDC":cur==="X402"?"USDC · x402":cur;s.runs++;s.earned+=devAmt;totals.paid+=devAmt;totals.runs++;
-    $("status").textContent=`Done. Paid ${devAmt.toFixed(4)} ${live?asset():"USDC"}${live&&cur==="X402"?" through x402, no network fee for you,":""} to ${s.dev} for “${s.name}”. 5% stays with the community.`;
-  }catch(e){
-    tx.status="failed";stopShift();
-    const m=String(e&&e.message||e);
-    console.error("Payment error",e);
-    if(live&&m==="NO_SOL"){$("status").innerHTML=NO_SOL_MSG()}
-    else if(live&&/expired|block height exceeded/i.test(m)){$("status").innerHTML=`The transaction never reached Solana devnet. Usually the wallet is on <b>Mainnet</b> or has no devnet SOL. Switch ${esc(walletName())} to <b>Devnet</b>, tap <b>Get devnet SOL</b>, and try again.`}
-    else $("status").textContent=!live?"Treasury empty.":m==="NO_USDC"?"Not enough devnet USDC. Use Get devnet USDC (choose Solana Devnet), or switch Pay in to SOL.":m==="X402_UNSUPPORTED"?"The x402 facilitator isn't offering Solana devnet right now. Switch Pay in to USDC.":/^X402/.test(m)?m.replace(/^X402:\s*/,"x402 facilitator said: ").slice(0,180)+" Try Pay in USDC instead.":/signTransaction|not a function/i.test(m)?walletName()+" can't sign for x402 here. Switch Pay in to USDC.":/reject|denied|cancel/i.test(m)?"Payment rejected in "+walletName()+".":/insufficient lamports|insufficient funds for fee|no record of a prior credit/i.test(m)?"Not enough devnet SOL in this wallet. Check "+walletName()+" is on Devnet, then use Get devnet SOL.":/rent/i.test(m)?"Payment too small for a new Solana account. Raise the skill price.":"Payment failed: "+m.slice(0,160);
-  }
-  endTask();
-}
-$("runOne").onclick=runTask;
-$("auto").onclick=()=>{auto=!auto;$("auto").textContent=auto?"End shift":"Start shift";$("auto").setAttribute("aria-pressed",auto);if(auto&&!busy)runTask()};
-
-/* ---------- Coco pays on its own: x402 with a small spending wallet and a daily budget ----------
-   1. GET /api/skills/:id  -> 402 Payment Required + paymentRequirements (payTo, amount, feePayer)
-   2. Coco signs a USDC transferChecked with its own key (fee payer = the facilitator)
-   3. GET again with X-PAYMENT -> the store's server has the facilitator verify and settle it,
-      then returns the skill (task instructions) and X-PAYMENT-RESPONSE with the signature. */
-const SKILL_API="/api/skills/";
-const COCO_KEY="isla:coco:v1",BUDGET_KEY="isla:coco:budget",SPENT_KEY="isla:coco:spent";
-const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
-let payer="treasury",coco=null,cocoSaved=true;
-function cocoWallet(){
-  if(coco||!W)return coco;
-  const saved=store.get(COCO_KEY);
-  if(saved){try{coco=W.Keypair.fromSecretKey(Uint8Array.from(JSON.parse(saved)))}catch(e){coco=null}}
-  if(!coco){coco=W.Keypair.generate();cocoSaved=store.set(COCO_KEY,JSON.stringify(Array.from(coco.secretKey)))}
-  return coco;
-}
-const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
-const toUnits=x=>Math.round(Number(x)*10**USDC_DECIMALS);
-const fromUnits=u=>Number(u)/10**USDC_DECIMALS;
-const fmtUsdc=u=>String(+fromUnits(u).toFixed(4));
-function budgetUnits(){const v=Number(store.get(BUDGET_KEY));return v>0?v:toUnits(1)}
-function spentUnits(){try{const d=JSON.parse(store.get(SPENT_KEY)||"null");return d&&d.day===today()?Number(d.units)||0:0}catch(e){return 0}}
-let spentMem=null;
-function getSpent(){const v=spentUnits();return spentMem&&spentMem.day===today()?Math.max(v,spentMem.units):v}
-function addSpent(u){const units=getSpent()+u;spentMem={day:today(),units};store.set(SPENT_KEY,JSON.stringify(spentMem))}
-async function renderCoco(){
-  const k=cocoWallet();if(!k)return;
-  const a=k.publicKey.toBase58();
-  $("cocoAddr").innerHTML=`<a href="https://explorer.solana.com/address/${a}?cluster=devnet" target="_blank" rel="noopener" style="color:var(--accent)">${a}</a>${cocoSaved?"":"<br>This browser can't save Coco's key, so it's lost when you close the page."}`;
-  const b=budgetUnits(),sp=getSpent();
-  if(document.activeElement!==$("cocoBudget"))$("cocoBudget").value=fromUnits(b);
-  $("cocoSpent").textContent=fromUnits(sp).toFixed(4);
-  $("cocoBudgetTxt").textContent=`of ${fmtUsdc(b)} USDC daily budget`;
-  $("cocoMeter").firstElementChild.style.width=Math.min(100,sp/b*100)+"%";
-  $("cocoMeter").classList.toggle("full",sp>=b);
-  if(netOk){try{$("cocoBal").textContent=(await usdcBalance(k.publicKey)).toFixed(4)}catch(e){}}
-  else $("cocoBal").textContent="offline";
-}
-$("cocoBudget").onchange=e=>{const v=Number(e.target.value);if(v>0&&v<=100){store.set(BUDGET_KEY,String(toUnits(v)));renderCoco()}};
-function setPayer(p){
-  payer=p;
-  [["treasury","payerTreasury"],["coco","payerCoco"]].forEach(([k,id])=>{$(id).classList.toggle("on",k===p);$(id).setAttribute("aria-checked",k===p)});
-  $("payInRow").hidden=p==="coco";
-  if(p==="coco")$("status").textContent=netOk?"Coco pays on its own with x402 from its spending wallet. Run a task.":"Coco needs Solana devnet to pay on its own, and this browser can't reach it.";
-  renderCoco();
-}
-$("payerTreasury").onclick=()=>setPayer("treasury");$("payerCoco").onclick=()=>setPayer("coco");
-
-/* The treasury (the wallet you connected) sends USDC to Coco in one signature. It also opens the
-   USDC accounts of Coco and of the developers of installed skills, because Coco has no SOL for that. */
-$("topUp").onclick=async()=>{
-  const btn=$("topUp"),amt=Number($("topAmt").value);
-  if(!(amt>0&&amt<=100)){say("cocoMsg","Choose an amount between 0.01 and 100 USDC.");return}
-  if(!live&&!(await connectWallet("cocoMsg")))return;
-  if(!(await hasFeeSol())){say("cocoMsg",NO_SOL_MSG());return}
-  if(await usdcBalance(owner)<amt){say("cocoMsg",`Your wallet doesn't have ${amt} devnet USDC. Get some at <a href="https://faucet.circle.com" target="_blank" rel="noopener" style="color:var(--accent)">faucet.circle.com</a> (choose Solana Devnet).`);return}
-  const k=cocoWallet(),cocoAta=ataOf(k.publicKey);
-  const t=new W.Transaction().add(createAtaIdempotentIx(owner,cocoAta,k.publicKey),transferCheckedIx(ataOf(owner),cocoAta,owner,toUnits(amt)));
-  try{
-    const devs=[...new Set(installed().map(x=>x.wallet))].slice(0,6).map(pk);
-    const infos=await conn.getMultipleAccountsInfo(devs.map(ataOf));
-    devs.forEach((d,i)=>{if(!infos[i])t.add(createAtaIdempotentIx(owner,ataOf(d),d))});
-  }catch(e){}
-  btn.disabled=true;
-  say("cocoMsg",`Approve sending ${amt} USDC to Coco in ${esc(walletName())}.`);
-  try{
-    const sig=await sendTx(t);
-    say("cocoMsg",`Coco received ${amt} USDC. ${txLink(sig,"See it on Explorer")}`);
-  }catch(e){
-    const m=String(e&&e.message||e);console.error("Top-up failed",e);
-    say("cocoMsg",/reject|denied|cancel/i.test(m)?`Cancelled in ${esc(walletName())}.`
-      :/expired|block height exceeded|blockhash|not found/i.test(m)?`The transaction didn't reach Solana devnet. Switch ${esc(walletName())} to <b>Devnet</b> and try again.`
-      :"Top-up failed: "+esc(m.slice(0,140)));
-  }
-  btn.disabled=false;refreshBal();renderCoco();
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    $("cam").srcObject=stream;await $("cam").play();
+    $("cam").hidden=false;$("photoImg").hidden=true;$("photoEmpty").hidden=true;photo=null;
+    $("camBtn").textContent="Stop camera";$("start").disabled=busy;
+    $("msg").textContent="This camera is Coco's eyes now. Point it at the scene and tap Start patrol.";
+  }catch(e){$("msg").textContent="Couldn't open the camera. Allow camera access, or upload a photo instead."}
 };
-
-const b64=obj=>Buffer.from(JSON.stringify(obj),"utf8").toString("base64");
-function unb64(str){try{return JSON.parse(Buffer.from(str,"base64").toString("utf8"))}catch(e){return null}}
-async function cocoTask(s){
-  const k=cocoWallet();
-  const tx={skill:s.name,dev:s.dev,amt:+(s.price*0.95).toFixed(6),sig:null,status:"asking",live:true,cur:"USDC · x402 · Coco",
-    steps:[{t:"asking the store…"}]};
-  txs.unshift(tx);renderLedger();
-  const step=(i,t,cls)=>{tx.steps[i]={t,cls};renderLedger()};
-  const fail=(html,i)=>{tx.status="failed";step(i,tx.steps[i]&&tx.steps[i].cls==="ok"?tx.steps[i].t:"failed","err");$("status").innerHTML=html;stopShift();endTask()};
-  if(!netOk||!k)return fail("Coco needs Solana devnet to pay on its own, and this browser can't reach it.",0);
-  const url=SKILL_API+encodeURIComponent(s.id);
-  try{
-    // 1. ask for the skill: the store answers 402 with what to pay
-    $("status").textContent=`Coco asks the store for “${s.name}”…`;
-    let r=await withTimeout(fetch(url,{headers:{Accept:"application/json"}}),20000);
-    let j=null;try{j=await r.json()}catch(e){}
-    if(r.status!==402)return fail(r.status===404&&!j?"The skill store server isn't running here. It runs on the live site (Netlify Functions), or locally with <span class=\"mono\">npx netlify-cli dev</span>."
-      :`The store answered ${r.status}${j&&j.error?": "+esc(String(j.error).slice(0,160)):""}.`,0);
-    const req=(j&&Array.isArray(j.accepts)?j.accepts:[]).find(a=>a&&a.scheme==="exact"&&a.network===X402_NETWORK&&a.asset===USDC_MINT);
-    if(!req||!validPk(req.payTo)||!req.extra||!validPk(req.extra.feePayer)||!/^\d+$/.test(String(req.maxAmountRequired)))
-      return fail("The store asked for a payment Coco doesn't understand (it only pays USDC on Solana devnet with x402 exact).",0);
-    const units=Number(req.maxAmountRequired);
-    // Coco never pays more than the listed price, nor beyond today's budget
-    if(units>toUnits(s.price))return fail(`The store asked ${fromUnits(units)} USDC but “${esc(s.name)}” is listed at ${s.price}. Coco didn't pay.`,0);
-    tx.amt=fromUnits(units);
-    step(0,`402 received · ${fromUnits(units).toFixed(4)} USDC to ${short(req.payTo)}`,"ok");
-    const b=budgetUnits(),sp=getSpent();
-    if(sp+units>b){tx.status="stopped";step(1,"budget used up","err");$("status").textContent=`Coco stopped: today's budget is used up (${fromUnits(sp).toFixed(4)} of ${fmtUsdc(b)} USDC). Raise the budget or wait until tomorrow.`;stopShift();return endTask()}
-    if(await usdcBalance(k.publicKey)<fromUnits(units))return fail("Coco's spending wallet is out of USDC. Tap <b>Top up Coco from my wallet</b>.",1);
-    const payTo=pk(req.payTo),dst=ataOf(payTo);
-    if(!(await conn.getAccountInfo(dst)))return fail("This developer has no USDC account yet, and Coco has no SOL to open one. Tap <b>Top up Coco from my wallet</b>: it opens it.",1);
-    // 2. Coco signs the payment (same rules as payX402: compute budget + transferChecked, facilitator pays the fee)
-    step(1,"signing…");$("status").textContent="Coco signs the payment with its spending wallet…";
-    const t=new W.Transaction().add(cuLimitIx(60000),cuPriceIx(1),transferCheckedIx(ataOf(k.publicKey),dst,k.publicKey,units));
-    t.feePayer=pk(req.extra.feePayer);t.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
-    t.partialSign(k);
-    const payment={x402Version:1,scheme:"exact",network:X402_NETWORK,payload:{transaction:t.serialize({requireAllSignatures:false,verifySignatures:false}).toString("base64")}};
-    // 3. ask again with X-PAYMENT: the store verifies + settles through the facilitator, then delivers
-    $("status").textContent="Coco sends the payment. The facilitator checks it and puts it on Solana…";
-    r=await withTimeout(fetch(url,{headers:{Accept:"application/json","X-PAYMENT":b64(payment)}}),45000);
-    j=null;try{j=await r.json()}catch(e){}
-    if(!r.ok)return fail(`Payment not accepted (${r.status}): ${esc(String(j&&j.error||"no details").slice(0,200))}`,1);
-    const settled=unb64(r.headers.get("X-PAYMENT-RESPONSE")||"")||{};
-    const sig=settled.transaction||(j&&j.paid&&j.paid.transaction);
-    tx.sig=typeof sig==="string"&&/^[1-9A-HJ-NP-Za-km-z]{43,100}$/.test(sig)?sig:null;
-    addSpent(units);
-    step(1,tx.sig?`paid · <a href="${EXPLORER(tx.sig)}" target="_blank" rel="noopener">Explorer ↗</a>`:"paid","ok");
-    const got=j&&j.skill,steps=got&&Array.isArray(got.steps)&&got.steps.length?got.steps.slice(0,8).map(x=>String(x).slice(0,80)):phases;
-    step(2,`skill delivered · ${steps.length} steps`,"ok");
-    tx.status="confirmed";s.runs++;s.earned+=tx.amt;totals.paid+=tx.amt;totals.runs++;
-    renderCoco();
-    // 4. now Coco runs the task with the instructions it bought
-    animate(s,steps,()=>{$("status").textContent=`Done. Coco paid ${tx.amt.toFixed(4)} USDC to ${s.dev} on its own for “${s.name}”, with x402. 5% stays with the community.`;endTask()});
-  }catch(e){
-    console.error("Coco payment error",e);
-    const m=String(e&&e.message||e);
-    fail(m==="timeout"?"The store took too long to answer. Try again.":/Failed to fetch|NetworkError|Load failed/i.test(m)?"Couldn't reach the skill store server.":"Coco couldn't pay: "+esc(m.slice(0,160)),tx.steps.length-1);
-  }
-}
-
-/* ---------- store / ledger ---------- */
-function renderStore(){
-  $("store").innerHTML=skills.map(s=>`
-   <div class="skill">
-     <h3>${esc(s.name)}</h3><span class="price">${s.price.toFixed(3)}</span>
-     <p>${esc(s.desc)}</p>
-     <div class="meta"><span class="badge${s.installed?" on":""}">${s.installed?"installed":"in vote"}</span><span>by ${esc(s.dev)}</span><span>${short(s.wallet)}</span><span>${s.runs} uses · ${s.earned.toFixed(4)} earned</span></div>
-   </div>`).join("");
-  $("installed").innerHTML=installed().map(s=>`<span class="tag">${esc(s.name)}</span>`).join("");
-}
-function renderLedger(){
-  $("lcount").textContent=txs.length+" tx";$("tPaid").textContent=totals.paid.toFixed(4);$("tRuns").textContent=totals.runs;
-  if(!txs.length)return;
-  $("ledger").innerHTML=txs.slice(0,40).map(t=>`
-   <div class="tx">
-     <span><b>Coco</b> → ${esc(t.dev)}</span><span class="amt">${t.amt.toFixed(4)} ${t.cur||""}</span>
-     <span class="small muted">${esc(t.skill)}</span>
-     <span class="pill ${t.status=="confirmed"?"ok":t.status=="failed"||t.status=="stopped"?"err":""}">${t.status}</span>
-     <span class="sig">${t.sig?(t.live?`<a href="${EXPLORER(t.sig)}" target="_blank" rel="noopener">${t.sig}</a>`:t.sig+" (simulated)"):"…"}</span>
-     ${t.steps?`<span class="steps">${t.steps.map(x=>`<span class="${x.cls||""}">${x.t}</span>`).join(" → ")}</span>`:""}
-   </div>`).join("");
-}
-$("pub").addEventListener("submit",async e=>{
-  e.preventDefault();
-  const price=parseFloat($("fPrice").value);if(!(price>=0.002&&price<=1))return;
-  let w=$("fWallet").value.trim();
-  if(w&&W){try{new W.PublicKey(w)}catch(err){$("fWallet").setCustomValidity("Not a valid Solana address");$("fWallet").reportValidity();return}}
-  $("fWallet").setCustomValidity("");
-  if(boardMode){
-    if(!live&&!(await connectWallet("pubMsg")))return;
-    const data={t:"skill",n:$("fName").value.trim().slice(0,40),d:$("fDesc").value.trim().slice(0,80),p:price,dev:$("fDev").value.trim().toLowerCase().slice(0,20),w:w||owner.toBase58()};
-    const btn=e.target.querySelector("button");btn.disabled=true;
-    const sig=await postBoard(data,`Approve publishing “${data.n}” in ${walletName()}.`,"pubMsg");
-    btn.disabled=false;
-    if(sig){e.target.reset();say("pubMsg",`Published. It's in the next vote. ${txLink(sig,"See it on Explorer")}`)}
-    return;
-  }
-  const s={id:String(nextId++),name:$("fName").value.trim(),desc:$("fDesc").value.trim()||"New skill from the community.",price,dev:$("fDev").value.trim().toLowerCase(),wallet:w||newAddr(),installed:false,runs:0,earned:0};
-  skills.push(s);votes[s.id]=0;voters[s.id]=[];e.target.reset();renderAll();
+["beach-1","beach-2","beach-3"].forEach(n=>{ // optional sample photos in assets/samples/
+  const img=new Image();img.alt="Sample beach photo";img.className="thumb";
+  img.onload=()=>{$("samples").hidden=false;$("samples").appendChild(img)};
+  img.onclick=()=>{stopCam();setPhoto(shrink(img))};
+  img.src=`assets/samples/${n}.jpg`;
 });
-$("fWallet").addEventListener("input",()=>$("fWallet").setCustomValidity(""));
-function renderAll(){renderVote();renderStore();renderLedger()}
-renderAll();initNetwork();
+
+/* ---------- timeline ---------- */
+let steps=[];
+function addStep(s){steps.push(s);renderTimeline();return s}
+function renderTimeline(){
+  $("timeline").innerHTML=steps.map(s=>`<li class="step ${s.state||""}">
+    <b>${esc(s.title)}${s.kind?` <span class="kind">${esc(s.kind)}</span>`:""}</b>
+    ${s.chips?`<span class="chips">${s.chips.map(c=>`<span class="chip ${c.state||""}">${c.html}</span>`).join('<span class="sep">→</span>')}</span>`:""}
+    ${s.html?`<span class="detail">${s.html}</span>`:""}
+  </li>`).join("");
+}
+const chip=(step,html,st="ok")=>{(step.chips=step.chips||[]).push({html,state:st});renderTimeline();return step.chips[step.chips.length-1]};
+
+/* ---------- Coco buys one skill: ask → 402 → Coco's wallet signs → pay → result ---------- */
+class Stop extends Error{}
+async function buy(skillId,body,step,extra={}){
+  let r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body)});
+  if(r.status!==402){
+    step.state="err";
+    throw new Stop(r.json.error||(r.status===404?"The skill store isn't running here.":`The skill answered ${r.status}.`));
+  }
+  const req=r.json.accepts&&r.json.accepts[0];
+  chip(step,`<span class="mono">402</span> · ${usdc(req.maxAmountRequired)} USDC → ${addrLink(req.payTo)}`);
+  const p=await api("/api/coco/pay",{method:"POST",body:JSON.stringify({skill:skillId,requirements:req,...extra})});
+  if(!p.ok){step.state="err";chip(step,"not paid","err");throw new Stop(p.json.error||"Coco's wallet couldn't pay.")}
+  const c=chip(step,"paying…","doing");
+  r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body),headers:{"X-PAYMENT":p.json.payment}});
+  if(!r.ok){c.state="err";c.html="not paid";step.state="err";renderTimeline();throw new Stop((r.json.error||`The skill answered ${r.status}.`)+(r.json.charged===false?" Coco wasn't charged.":""))}
+  let settled={};try{settled=JSON.parse(atob(r.headers.get("X-PAYMENT-RESPONSE")||""))}catch(e){}
+  const sig=settled.transaction||r.json.payment&&r.json.payment.transaction;
+  c.state="ok";c.html=`paid ✓ ${txLink(sig)}`;step.state="ok";renderTimeline();
+  return r.json.result;
+}
+
+async function patrol(){
+  if(busy)return;
+  if(!photo&&stream)setPhoto(shrink($("cam")));
+  if(!photo){$("msg").textContent="Take or upload a photo first.";return}
+  busy=true;$("start").disabled=true;$("botFace").classList.add("work");$("result").hidden=true;$("msg").textContent="";
+  steps=[];
+  addStep({title:"1 · Photo",state:"ok",html:`<img class="mini" src="${photo}" alt="">`});
+  try{
+    // Litter Spotter
+    const s1=addStep({title:"2 · Litter Spotter",kind:"AI",state:"doing"});
+    const spot=await buy("litter-spotter",{image:photo},s1);
+    s1.html=esc(spot.summary||`${spot.items.length} kinds of litter found.`);renderTimeline();
+    let items=spot.items.slice();
+    // Ask a human when the AI isn't sure
+    if(spot.unsure){
+      const u=spot.unsure;
+      addStep({title:"The AI isn't sure",state:"warn",html:`“${esc(u.question)}” Coco asks a person.`});
+      const s2=addStep({title:"3 · Human Reviewer",kind:"Person",state:"doing"});
+      const human=await askHuman(spot.spotId,s2);
+      const verdict=human?human.answer:u.aiGuess;
+      if(verdict==="not_litter")items=items.filter((_,i)=>i!==u.itemIndex);
+      else if(items[u.itemIndex])items[u.itemIndex]={...items[u.itemIndex],confidence:"high"};
+      s2.html=human?`A person answered: <b>${esc(verdict==="litter"?u.litterOption:u.notLitterOption)}</b>. Coco uses the human answer.`
+        :`Nobody answered in 60 seconds. Coco goes on with the AI's guess (<b>${esc(verdict==="litter"?u.litterOption:u.notLitterOption)}</b>) and pays nothing.`;
+      if(!human)s2.state="warn";
+      renderTimeline();
+    }
+    // Cleanup Planner
+    const s3=addStep({title:`${spot.unsure?4:3} · Cleanup Planner`,kind:"Planner",state:"doing"});
+    const plan=await buy("cleanup-planner",{items},s3);
+    s3.html=plan.steps.length?`${plan.steps.length} steps · about ${plan.minutes} min · ${plan.recyclablePercent}% recyclable`:esc(plan.message);
+    renderTimeline();
+    addStep({title:"Done",state:"ok",html:"Coco paid each skill on its own. Nobody tapped Confirm."});
+    showResult(spot,items,plan);
+  }catch(e){
+    const m=e instanceof Stop?e.message:"Something went wrong: "+(e&&e.message||e);
+    addStep({title:"Coco stopped",state:"err",html:esc(m)});
+    $("msg").textContent=m;
+    if(!(e instanceof Stop))console.error(e);
+  }
+  busy=false;$("start").disabled=!photo&&!stream;$("botFace").classList.remove("work");
+  loadStatus();setTimeout(loadStats,1500);
+}
+$("start").onclick=patrol;
+
+async function askHuman(spotId,step){
+  let r=await api("/api/skills/human-reviewer",{method:"POST",body:JSON.stringify({spotId})});
+  if(r.status!==202){step.state="warn";return null}
+  const id=r.json.reviewId,until=r.json.expiresAt||Date.now()+60000;
+  const wait=chip(step,"waiting for a person…","doing");
+  step.html=`Anyone can answer at <a href="review.html" target="_blank" rel="noopener">${esc(location.host)}/review</a>.`;renderTimeline();
+  for(;;){
+    await sleep(2000);
+    r=await api("/api/skills/human-reviewer",{method:"POST",body:JSON.stringify({reviewId:id})});
+    if(r.status===202){wait.html=`waiting for a person… ${Math.max(0,Math.ceil((until-Date.now())/1000))} s`;renderTimeline();continue}
+    if(r.status===410||r.status>=500||r.status===404){wait.state="warn";wait.html="no answer";renderTimeline();return null}
+    if(r.status===402){
+      wait.html="a person answered";wait.state="ok";step.chips=[];renderTimeline();
+      chip(step,"a person answered");
+      return await buy("human-reviewer",{reviewId:id},step,{reviewId:id});
+    }
+    wait.state="warn";wait.html="no answer";renderTimeline();return null;
+  }
+}
+
+function showResult(spot,items,plan){
+  const nice=t=>t.replace(/_/g," ");
+  $("result").innerHTML=`<h3>What Coco found</h3>
+    ${items.length?`<ul class="found">${items.map(i=>`<li><b>${i.count} × ${esc(i.label)}</b> <span class="muted">${esc(nice(i.type))}${i.where?" · "+esc(i.where):""}</span></li>`).join("")}</ul>`:'<p class="small muted">No litter. This stretch of beach is clean.</p>'}
+    ${plan.steps.length?`<h3>Cleanup plan</h3><ol class="plan">${plan.steps.map(s=>`<li>${esc(s.action)} <span class="bin">${esc(s.bin)}</span>${s.note?` <span class="muted small">${esc(s.note)}</span>`:""}</li>`).join("")}</ol>
+    <p class="small muted">About ${plan.minutes} min · ${plan.recyclablePercent}% recyclable · bins follow Brazil's recycling colours.</p>`:""}
+    ${spot.isBeach?"":'<p class="small muted">This doesn\'t look like a beach, but Coco checked it anyway.</p>'}`;
+  $("result").hidden=false;
+}
+
+/* ---------- top up Coco from your wallet ---------- */
+let conn=null;try{conn=new W.Connection("https://api.devnet.solana.com","confirmed")}catch(e){}
+function renderWallet(){
+  const l=IW.list(),sel=$("walletPick");
+  sel.hidden=l.length<2||!!IW.owner;
+  sel.innerHTML=l.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("");
+  $("connect").textContent=IW.owner?"Disconnect":IW.available()?"Connect "+IW.name():"Connect wallet";
+  $("ownerAddr").innerHTML=IW.owner?addrLink(IW.owner.toBase58()):"";
+  if(l.length)$("openIn").hidden=true;
+}
+IW.onChange(renderWallet);
+$("walletPick").onchange=e=>IW.choose(e.target.value);
+$("connect").onclick=async()=>{
+  if(IW.owner)return IW.disconnect();
+  if(!IW.available()){$("topMsg").innerHTML="No Solana wallet in this browser. On your phone, open this page inside your wallet app:";$("openIn").innerHTML=IW.openInLinks();$("openIn").hidden=false;return}
+  try{await IW.connect();$("topMsg").innerHTML=`${esc(IW.name())} connected. Make sure it's on Solana <b>Devnet</b>.`}
+  catch(e){$("topMsg").textContent=`Connection cancelled in ${IW.name()}.`}
+};
+$("topUp").onclick=async()=>{
+  const amt=Number($("topAmt").value);
+  if(!(amt>0&&amt<=100)){$("topMsg").textContent="Choose between 0.01 and 100 USDC.";return}
+  if(!state||!state.address){$("topMsg").textContent="Coco's wallet isn't set up on the server yet.";return}
+  if(!IW.owner){$("connect").click();if(!IW.owner)return}
+  const units=Math.round(amt*1e6),me=IW.owner;
+  try{
+    if((await conn.getBalance(me))<10000){$("topMsg").innerHTML=IW.explain(new Error("insufficient"));return}
+    if((await IW.usdcUnits(conn,me))<units){$("topMsg").innerHTML=`Your wallet doesn't have ${amt} devnet USDC. Get some at <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a> (choose Solana Devnet).`;return}
+    const coco=new W.PublicKey(state.address),t=new W.Transaction();
+    const owners=[coco,...state.skills.filter(s=>ADDR.test(s.payTo)).map(s=>new W.PublicKey(s.payTo))];
+    const infos=await conn.getMultipleAccountsInfo(owners.map(IW.ataOf));
+    owners.forEach((o,i)=>{if(!infos[i])t.add(IW.createAtaIdempotentIx(me,IW.ataOf(o),o))}); // open missing USDC accounts
+    t.add(IW.transferCheckedIx(IW.ataOf(me),IW.ataOf(coco),me,units));
+    $("topUp").disabled=true;$("topMsg").textContent=`Approve sending ${amt} USDC to Coco in ${IW.name()}.`;
+    const sig=await IW.sendTx(conn,t);
+    $("topMsg").innerHTML=`Thank you! Coco received ${amt} USDC. ${txLink(sig,"See it on Explorer ↗")}`;
+    loadStatus();
+  }catch(e){console.error(e);$("topMsg").innerHTML=IW.explain(e)}
+  $("topUp").disabled=false;
+};
+
+renderWallet();loadStatus();loadStats();IW.connectSilently();
+setInterval(loadStatus,30000);setInterval(loadStats,30000);
 </script>

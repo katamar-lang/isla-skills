@@ -20,6 +20,8 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: 774dae81-dcf7-42e4-b800-fad91c6ba090
         run: |
+          npm ci
           mkdir -p public
-          cp index.html web3.min.js favicon.png apple-touch-icon.png public/
+          cp index.html review.html style.css wallet.js web3.min.js favicon.png apple-touch-icon.png _redirects public/
+          if [ -d assets/samples ]; then mkdir -p public/assets && cp -r assets/samples public/assets/; fi
           npx --yes netlify-cli@17 deploy --prod --dir=public --functions=netlify/functions --site="$NETLIFY_SITE_ID" --message "Deploy from GitHub ${GITHUB_SHA::7}"

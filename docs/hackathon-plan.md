@@ -1,5 +1,16 @@
 # Hackathon plan · IslandHack v5 (decided Oct 31, 2026)
 
+## The goal: WIN IslandHack v5
+
+Every decision is judged by what a judge sees in a **2-minute demo**:
+- **It works live**, with no errors, and the judge needs **no wallet**.
+- **Understood in 10 seconds:** photo → 402 → payment → result.
+- It's clearly **a robot in the physical world paying for skills**, not another AI agent (about 5 projects at the house are AI agents).
+- **Nothing the page says is false.**
+- **Real usage numbers:** photos analyzed, payments, USDC earned by skill makers.
+
+If something doesn't help with that, it waits until after the hackathon.
+
 This is the build spec for the hackathon. It replaces the earlier week-2 idea of an Anchor program. Deadline: **submit by Nov 11, 2026**. The owner builds and presents this project alone: no joint demos or partnerships with other projects.
 
 ## The new focus
@@ -73,13 +84,22 @@ Use the Solana Wallet Standard so any compatible wallet appears in a picker. Kee
 - Don't add names of other people from the house.
 - When something here is done, tick it in this file and update CLAUDE.md.
 
+## Decisions taken with the owner (Oct 31)
+- **One Coco, on the server.** Its devnet key is the Netlify secret `COCO_SECRET_KEY`; the server enforces a daily budget of 1 USDC. Visitors need no wallet. The owner tops Coco up from her own wallet.
+- **AI cost limits:** 100 photos a day in total, 5 per visitor (hashed IP + day), checked before any payment or AI call. The page says clearly when a limit is reached.
+- **Coco and every skill have different wallets**, shown side by side on the page. Coco's wallet service refuses to pay its own address.
+- **The 5% "community" share is gone from the copy**: there is no community treasury wallet, so 100% of each price goes to the skill's maker.
+- **Storage for reviews:** Netlify Blobs (built into Netlify, nothing extra to run).
+
 ## Checklist
-- [ ] Coco's spending wallet with daily budget (owner confirmed)
-- [ ] x402 skill store working end to end on devnet (or plan B)
-- [ ] Beach Patrol: Litter Spotter + Cleanup Planner, chained payments, camera/upload
-- [ ] Community vote removed
-- [ ] Ask a human: /review page, paid reviews, 60 s fallback
-- [ ] Untrue claims fixed
-- [ ] Wallet Standard
-- [ ] Public usage counters from Solana
-- [ ] README rewritten for the new focus
+- [x] Coco's spending wallet with daily budget (owner confirmed: server-side, 1 USDC/day)
+- [ ] x402 skill store working end to end on devnet (or plan B) · built and tested with a simulated chain and facilitator, both remote and plan B (`X402_FACILITATOR_URL=local`); **needs the real devnet test on the live site**
+- [x] Beach Patrol: Litter Spotter + Cleanup Planner, chained payments, camera/upload/desk-robot camera
+- [x] Community vote removed
+- [x] Ask a human: /review page, paid reviews, 60 s fallback
+- [x] Untrue claims fixed (no 5% claim, "Coco's wallet" vs skill wallets, numbers from Solana)
+- [x] Wallet Standard
+- [x] Public usage counters from Solana (`/api/stats`)
+- [x] README rewritten for the new focus
+- [ ] Real beach photos from Florianópolis in `assets/samples/beach-1.jpg` … `beach-3.jpg` (so judges can try without a camera)
+- [ ] Netlify environment variables set (see CLAUDE.md → Setup)

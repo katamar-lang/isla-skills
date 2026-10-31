@@ -1,139 +1,124 @@
-/* Isla Skills store, x402 v1 on Solana devnet.
-   GET /api/skills/:id
-   - without X-PAYMENT: 402 with the payment requirements (who to pay, how much, in which token)
-   - with X-PAYMENT (base64 JSON payment payload): the facilitator verifies and settles the
-     payment, then the skill (task instructions as JSON) is returned with X-PAYMENT-RESPONSE.
-   The facilitator URL is configurable with the X402_FACILITATOR_URL environment variable. */
+/* The skill store. Every skill is a separate paid service with its own payout wallet:
+     POST /api/skills/:id                 -> 402 Payment Required + x402 paymentRequirements
+     POST /api/skills/:id  + X-PAYMENT    -> verify, do the work, settle, return the result
+   Skills: litter-spotter (AI), human-reviewer (a person), cleanup-planner (rules). */
+import { randomUUID } from "node:crypto";
+import { SKILLS, json, preflight, today, visitorId, PHOTOS_PER_DAY, PHOTOS_PER_VISITOR, REVIEW_SECONDS } from "../lib/config.mjs";
+import { requirements, paymentRequired, decodePayment, verify, settle, facilitatorFeePayer, paymentResponseHeader } from "../lib/x402.mjs";
+import { getJSON, setJSON, bump, count, db } from "../lib/store.mjs";
+import { spotLitter } from "../lib/spotter.mjs";
+import { planCleanup } from "../lib/planner.mjs";
 
-const FACILITATOR = (process.env.X402_FACILITATOR_URL || "https://facilitator.ultravioletadao.xyz").replace(/\/+$/, "");
-const RPC = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
-const NETWORK = "solana-devnet";
-const USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Circle devnet USDC, 6 decimals
-const DEV_SHARE = 0.95; // 95% of the price goes to the developer, 5% stays with the community
-const BOARD = "Gg46k4FaiuUm38UES1kTw6i3ySBBZp9BoqDhK7r4d5tu";
-const TAG = "isla:v1:";
-const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const MAX_IMAGE_CHARS = 1_400_000; // about 1 MB of JPEG; the page shrinks photos before sending
 
-/* Example skills. Same prices and payout addresses as SEED in index.html. */
-export const CATALOG = {
-  "1": { name: "Serve coffee", price: 0.002, wallet: "7EnzRoMpgCYThA4MXHx31d3u3kQzGzcNtJSsEZbzWog5",
-    steps: ["Go to the kitchen", "Brew one cup of coffee", "Carry it to the co-working tables", "Come back to the dock"] },
-  "2": { name: "Beach cleanup", price: 0.003, wallet: "4Zt8pisTsQpRNiv8jcfPKguNLYh25WGxvsNEZy3GFUc4",
-    steps: ["Walk to the beach in front of the house", "Scan the sand for plastic and glass", "Pick up and sort the trash", "Empty the bags in the recycling bins"] },
-  "3": { name: "Visitor guide", price: 0.002, wallet: "6baT8qi1o2wTNPDfrXDUtyiFyP66pwNra9VLPKBV25yk",
-    steps: ["Wait at the entrance", "Welcome the new attendee", "Walk them to their room", "Show the house rules"] },
-  "4": { name: "Demo Day timer", price: 0.004, wallet: "D2kBeezt5apTAKengXQRuZtsjao1bDCgXSYzBscpR88s",
-    steps: ["Stand next to the stage", "Start a 3-minute timer for the pitch", "Show the time left", "Ring at 3 minutes"] }
-};
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "X-PAYMENT, Content-Type",
-  "Access-Control-Expose-Headers": "X-PAYMENT-RESPONSE"
-};
-const json = (status, body, extra = {}) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...CORS, ...extra } });
-const b64json = obj => Buffer.from(JSON.stringify(obj), "utf8").toString("base64");
-
-async function post(url, body, ms = 9000) {
-  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(ms) });
-  let j = null; try { j = await r.json(); } catch (e) {}
-  return { ok: r.ok, status: r.status, body: j || {} };
+export function skillInfo(id) {
+  const s = SKILLS[id];
+  return { id, name: s.name, kind: s.kind, price: s.price, priceUsdc: s.price / 1e6, does: s.does,
+    payTo: s.wallet ? s.wallet() : "the person who answers" };
 }
 
-let feePayerCache = null;
-async function facilitatorFeePayer() {
-  if (feePayerCache) return feePayerCache;
-  const r = await fetch(FACILITATOR + "/supported", { signal: AbortSignal.timeout(8000) });
-  const d = await r.json();
-  const kinds = Array.isArray(d.kinds) ? d.kinds : Array.isArray(d) ? d : [];
-  const k = kinds.find(x => x.network === NETWORK && x.scheme === "exact" && Number(x.x402Version) === 1);
-  if (!k || !k.extra || !k.extra.feePayer) throw new Error("facilitator does not offer exact/solana-devnet");
-  feePayerCache = k.extra.feePayer;
-  return feePayerCache;
+/* Sell one result: no payment -> 402; payment -> verify (in parallel with the work) -> settle -> deliver.
+   If the work fails, the payment is never settled, so Coco isn't charged. */
+async function sell(req, reqs, work, afterSettle) {
+  const header = req.headers.get("x-payment");
+  if (!header) return paymentRequired(reqs, "X-PAYMENT header is required");
+  const payment = decodePayment(header);
+  if (!payment) return paymentRequired(reqs, "X-PAYMENT must be an x402 v1 exact payment on solana-devnet");
+  const t0 = Date.now();
+  const [v, w] = await Promise.all([
+    verify(payment, reqs).catch(e => ({ isValid: false, invalidReason: "facilitator didn't answer: " + String(e.message || e).slice(0, 80) })),
+    work().then(r => ({ ok: true, r }), e => ({ ok: false, e }))
+  ]);
+  if (!v.isValid) return paymentRequired(reqs, "Facilitator /verify: " + v.invalidReason);
+  if (!w.ok) return json(w.e.status || 502, { error: String(w.e.message || w.e).slice(0, 200), code: w.e.code || "skill_failed", charged: false });
+  const t1 = Date.now();
+  const s = await settle(payment, reqs).catch(e => ({ success: false, errorReason: "facilitator didn't answer: " + String(e.message || e).slice(0, 80) }));
+  if (!s.success) return paymentRequired(reqs, "Facilitator /settle: " + s.errorReason);
+  if (afterSettle) await afterSettle(s.transaction);
+  await db().delete("stats/cache").catch(() => {}); // the public numbers include this payment right away
+  return json(200, { result: w.r, payment: { transaction: s.transaction, amount: reqs.maxAmountRequired, payTo: reqs.payTo, asset: reqs.asset } },
+    { "X-PAYMENT-RESPONSE": paymentResponseHeader(s), "Server-Timing": `verify_and_work;dur=${t1 - t0}, settle;dur=${Date.now() - t1}` });
 }
 
-/* Community skills are memos on Solana devnet (see the board in index.html). id = "c" + first 10 chars of the signature. */
-async function communitySkill(id) {
-  const prefix = id.slice(1);
-  const r = await post(RPC, { jsonrpc: "2.0", id: 1, method: "getSignaturesForAddress", params: [BOARD, { limit: 1000 }] }, 8000);
-  const hit = (r.body.result || []).find(x => !x.err && x.signature.startsWith(prefix) && x.memo && x.memo.includes(TAG));
-  if (!hit) return null;
-  let txt = hit.memo.slice(hit.memo.indexOf(TAG) + TAG.length);
-  const j = txt.lastIndexOf("}"); if (j < 0) return null;
-  let d; try { d = JSON.parse(txt.slice(0, j + 1)); } catch (e) { return null; }
-  const price = Number(d && d.p);
-  if (!d || d.t !== "skill" || typeof d.n !== "string" || !d.n.trim() || d.n.length > 40) return null;
-  if (!(price >= 0.002 && price <= 1) || typeof d.w !== "string" || !B58.test(d.w)) return null;
-  return { name: d.n.trim(), price, wallet: d.w, steps: ["Read the task", "Do the task: " + d.n.trim(), "Check the result", "Report back"] };
+const err = (status, error, code, extra = {}) => json(status, { error, code, ...extra });
+
+async function litterSpotter(req, context, body, reqsFor) {
+  if (!process.env.ANTHROPIC_API_KEY) return err(503, "Litter Spotter isn't switched on yet (no AI key on the server).", "no_key");
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(String(body.image || ""));
+  if (!m) return err(400, "Send the photo as a JPEG, PNG or WebP data URL in \"image\".", "bad_image");
+  if (m[2].length > MAX_IMAGE_CHARS) return err(413, "Photo too large. Send at most about 1 MB.", "too_large");
+  const day = today(), vid = visitorId(req, context);
+  const [all, mine] = await Promise.all([count(`photos/${day}`), count(`photos/${day}/${vid}`)]);
+  if (all >= PHOTOS_PER_DAY()) return err(429, `Coco has analyzed today's ${PHOTOS_PER_DAY()} photos, the daily limit for the AI. It starts again tomorrow (UTC).`, "daily_photo_limit", { limit: PHOTOS_PER_DAY() });
+  if (mine >= PHOTOS_PER_VISITOR()) return err(429, `You've used your ${PHOTOS_PER_VISITOR()} photos for today. Thanks for trying Coco! Come back tomorrow.`, "visitor_photo_limit", { limit: PHOTOS_PER_VISITOR() });
+  const reqs = await reqsFor(SKILLS["litter-spotter"].wallet(), "Isla Skills: Litter Spotter (one photo)");
+  return sell(req, reqs, async () => {
+    // Count the photo before calling the AI: the limit protects the real AI bill.
+    await Promise.all([bump(`photos/${day}`), bump(`photos/${day}/${vid}`)]);
+    const result = await spotLitter(m[2], m[1]);
+    const spotId = randomUUID();
+    if (result.unsure) await setJSON(`spot/${spotId}`, { image: body.image, unsure: result.unsure, items: result.items, created: Date.now(), reviewId: null });
+    return { ...result, spotId };
+  });
 }
 
-export async function findSkill(id) {
-  if (Object.hasOwn(CATALOG, id)) return CATALOG[id];
-  if (/^c[1-9A-HJ-NP-Za-km-z]{10}$/.test(id)) return communitySkill(id);
-  return null;
+export async function reviewState(id) {
+  const r = await getJSON(`review/${id}`);
+  if (r && r.status === "pending" && Date.now() > r.expiresAt) {
+    r.status = "expired"; await setJSON(`review/${id}`, r); await db().delete(`pending/${id}`);
+  }
+  return r;
 }
 
-export function requirementsFor(id, skill, resource, feePayer) {
-  return {
-    scheme: "exact",
-    network: NETWORK,
-    maxAmountRequired: String(Math.round(skill.price * DEV_SHARE * 1e6)),
-    resource,
-    description: "Isla Skills: " + skill.name,
-    mimeType: "application/json",
-    payTo: skill.wallet,
-    maxTimeoutSeconds: 60,
-    asset: USDC_MINT,
-    extra: { feePayer }
-  };
+async function humanReviewer(req, body, reqsFor) {
+  // Step 1: Coco asks for a review. Nothing to pay yet: nobody has answered.
+  if (body.spotId && !body.reviewId) {
+    const spot = await getJSON(`spot/${String(body.spotId).slice(0, 40)}`);
+    if (!spot || !spot.unsure) return err(404, "Nothing to review for this photo.", "no_spot");
+    if (spot.reviewId) { const r = await reviewState(spot.reviewId); return json(202, { status: r.status === "pending" ? "waiting" : r.status, reviewId: r.id, expiresAt: r.expiresAt }); }
+    const id = randomUUID(), u = spot.unsure, item = spot.items[u.itemIndex] || {};
+    const r = { id, spotId: body.spotId, question: u.question, litterOption: u.litterOption, notLitterOption: u.notLitterOption,
+      aiGuess: u.aiGuess, label: item.label || "", created: Date.now(), expiresAt: Date.now() + REVIEW_SECONDS * 1000, status: "pending" };
+    await setJSON(`review/${id}`, r); await setJSON(`pending/${id}`, { expiresAt: r.expiresAt });
+    spot.reviewId = id; await setJSON(`spot/${body.spotId}`, spot);
+    return json(202, { status: "waiting", reviewId: id, expiresAt: r.expiresAt, seconds: REVIEW_SECONDS });
+  }
+  // Step 2: Coco checks back. Once a person has answered, the answer costs a payment to that person.
+  const r = await reviewState(String(body.reviewId || "").slice(0, 40));
+  if (!r) return err(404, "Unknown review.", "no_review");
+  if (r.status === "pending") return json(202, { status: "waiting", reviewId: r.id, secondsLeft: Math.max(0, Math.ceil((r.expiresAt - Date.now()) / 1000)) });
+  if (r.status === "expired") return json(410, { status: "expired", reviewId: r.id, error: "Nobody answered in time." });
+  if (r.status === "paid") return err(409, "This review was already paid.", "already_paid", { transaction: r.transaction });
+  const reqs = await reqsFor(r.reviewer, "Isla Skills: Human Reviewer (one answer)");
+  return sell(req, reqs, async () => ({ answer: r.answer, reviewer: r.reviewer, reviewId: r.id }), async tx => {
+    const cur = await getJSON(`review/${r.id}`); cur.status = "paid"; cur.transaction = tx; await setJSON(`review/${r.id}`, cur);
+  });
 }
 
 export default async (req, context) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-  if (req.method !== "GET") return json(405, { error: "Use GET" });
-
+  if (req.method === "OPTIONS") return preflight();
   const url = new URL(req.url);
   const id = decodeURIComponent((context && context.params && context.params.id) || url.pathname.split("/").filter(Boolean).pop() || "");
-  let skill;
-  try { skill = await findSkill(id); } catch (e) { return json(502, { error: "Couldn't read the skill from Solana devnet" }); }
-  if (!skill) return json(404, { error: "Unknown skill: " + id });
+  if (!Object.hasOwn(SKILLS, id)) return err(404, "Unknown skill: " + id.slice(0, 40), "unknown_skill");
+  if (req.method === "GET") return json(200, skillInfo(id));
+  if (req.method !== "POST") return err(405, "Use POST", "method");
+  if (Number(req.headers.get("content-length") || 0) > 2_000_000) return err(413, "Request too large.", "too_large");
+  let body; try { body = await req.json(); } catch (e) { return err(400, "Send a JSON body.", "bad_json"); }
+  if (!body || typeof body !== "object") return err(400, "Send a JSON body.", "bad_json");
 
   let feePayer;
-  try { feePayer = await facilitatorFeePayer(); }
-  catch (e) { return json(502, { error: "x402 facilitator unavailable: " + String(e.message || e).slice(0, 120), facilitator: FACILITATOR }); }
-
-  const requirements = requirementsFor(id, skill, url.origin + url.pathname, feePayer);
-  const paymentRequired = error => json(402, { x402Version: 1, error, accepts: [requirements] });
-
-  const header = req.headers.get("x-payment");
-  if (!header) return paymentRequired("X-PAYMENT header is required");
-
-  let paymentPayload;
-  try { paymentPayload = JSON.parse(Buffer.from(header, "base64").toString("utf8")); }
-  catch (e) { return paymentRequired("X-PAYMENT is not valid base64 JSON"); }
-  if (!paymentPayload || Number(paymentPayload.x402Version) !== 1 || paymentPayload.scheme !== "exact" ||
-      paymentPayload.network !== NETWORK || !paymentPayload.payload || typeof paymentPayload.payload.transaction !== "string")
-    return paymentRequired("X-PAYMENT must be an x402 v1 exact payment on " + NETWORK);
-
-  const body = { x402Version: 1, paymentPayload, paymentRequirements: requirements };
-  let v, s;
-  try { v = await post(FACILITATOR + "/verify", body); }
-  catch (e) { return json(502, { error: "Facilitator /verify did not answer: " + String(e.message || e).slice(0, 120), facilitator: FACILITATOR }); }
-  if (!v.ok || v.body.isValid === false)
-    return paymentRequired("Facilitator /verify: " + (v.body.invalidReason || v.body.error || v.body.errorReason || "HTTP " + v.status));
-
-  try { s = await post(FACILITATOR + "/settle", body, 20000); }
-  catch (e) { return json(502, { error: "Facilitator /settle did not answer: " + String(e.message || e).slice(0, 120), facilitator: FACILITATOR }); }
-  const transaction = s.body.transaction || s.body.transactionHash || s.body.txHash;
-  if (!s.ok || !s.body.success || !transaction)
-    return paymentRequired("Facilitator /settle: " + (s.body.errorReason || s.body.error || "HTTP " + s.status));
-
-  const settlement = { success: true, transaction, network: NETWORK, payer: s.body.payer || v.body.payer || null };
-  return json(200, {
-    skill: { id, name: skill.name, version: 1, steps: skill.steps },
-    paid: { amount: requirements.maxAmountRequired, asset: USDC_MINT, payTo: skill.wallet, transaction }
-  }, { "X-PAYMENT-RESPONSE": b64json(settlement) });
+  const reqsFor = async (payTo, description) => {
+    feePayer = feePayer || await facilitatorFeePayer();
+    return requirements({ amount: SKILLS[id].price, payTo, resource: url.origin + "/api/skills/" + id, description, feePayer });
+  };
+  try {
+    if (id === "litter-spotter") return await litterSpotter(req, context, body, reqsFor);
+    if (id === "human-reviewer") return await humanReviewer(req, body, reqsFor);
+    const items = Array.isArray(body.items) ? body.items : null;
+    if (!items) return err(400, "Send the litter list in \"items\".", "bad_items");
+    return await sell(req, await reqsFor(SKILLS["cleanup-planner"].wallet(), "Isla Skills: Cleanup Planner (one plan)"), async () => planCleanup(items));
+  } catch (e) {
+    return err(502, "The store couldn't reach the payment facilitator: " + String(e.message || e).slice(0, 120), "facilitator_down");
+  }
 };
-
 export const config = { path: "/api/skills/:id" };

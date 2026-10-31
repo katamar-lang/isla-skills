@@ -1,0 +1,15 @@
+{
+  "name": "isla-skills",
+  "private": true,
+  "type": "module",
+  "description": "Isla Skills: an app store for robot skills, paid per use with x402 on Solana",
+  "scripts": {
+    "keys": "node scripts/new-keys.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "@netlify/blobs": "^11.1.7",
+    "@solana/web3.js": "1.95.3",
+    "zod": "^4.6.7"
+  }
+}

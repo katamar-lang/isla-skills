@@ -4,90 +4,89 @@
 
 # Isla Skills
 
-**An app store for robot skills. Robots pay on their own, per use, with x402 on Solana.**
+**An app store for robot skills. Each skill is a service a robot calls and pays per use, in USDC on Solana, with x402. No human approves anything.**
 
-Isla Skills started at the IslandDAO V5 house in Florianópolis. Coco is a robot that belongs to the whole community and our first demo. Developers publish skills with a price per use, the community votes on what Coco learns next, and every time Coco uses a skill it pays the developer by itself, from a small daily budget.
+Robots are learning new skills through software, but there's no way to pay for a skill each time a robot uses it. On Isla Skills, a skill is an API: the robot sends something (a photo, a reading), the skill answers, and the robot pays for that answer. Skills can come from AI models and from people.
 
-**Live demo:** https://isla-skills-dao-2b40fb.netlify.app
+**Live demo:** https://isla-skills-dao-2b40fb.netlify.app · **Earn by reviewing:** https://isla-skills-dao-2b40fb.netlify.app/review
 
-## How it works
+## Beach Patrol
 
-1. **Publish.** A developer lists a skill (serve coffee, beach cleanup, visitor guide) with a price per use and a payout wallet.
-2. **Vote.** People at the house vote on which skill Coco learns next. The winner gets installed.
-3. **Work.** Coco runs its installed skills as tasks.
-4. **Pay.** Before each task, Coco buys the skill from the store with x402: the store answers `402 Payment Required`, Coco signs a USDC payment with its own spending wallet, and gets the skill. Nobody taps "Confirm". 95% of the price goes to the developer and 5% stays with the community.
+Coco is a beach robot in Florianópolis (simulated: a phone or laptop camera plays its eyes). One photo starts a chain of paid skills, each from a different service with its own wallet:
+
+```
+photo ─▶ Litter Spotter (AI)      402 ─▶ Coco pays 0.01 USDC  ─▶ litter list
+           └─ AI not sure? ─▶ Human Reviewer (a person)  402 ─▶ Coco pays 0.005 USDC ─▶ the person's answer
+      ─▶ Cleanup Planner           402 ─▶ Coco pays 0.002 USDC ─▶ cleanup plan
+```
+
+- **Litter Spotter** uses Claude (Haiku) with vision to list the litter in the photo with a confidence for each item.
+- **Human Reviewer:** when the AI isn't sure ("litter or a shell?"), Coco asks a person. Anyone can answer from `/review` with one tap and gets paid in USDC. If nobody answers in 60 seconds, Coco goes on with the AI's guess and pays nothing.
+- **Cleanup Planner** turns the list into a plan: order, recycling bins (Brazil's colours), time and % recyclable.
+
+The page shows every step as **402 → paid → result**, with a Solana Explorer link for each payment, and live numbers read from Solana: photos analyzed, paid skill calls, USDC paid to skill makers, people paid for reviews.
 
 ## How Coco pays on its own (x402)
 
 ```
-Coco ──GET /api/skills/1──────────────▶ store (Netlify Function)
-     ◀── 402 + paymentRequirements ───   (payTo = developer, amount, USDC, feePayer)
-Coco signs a USDC transfer with its spending wallet (no wallet popup)
-Coco ──GET /api/skills/1 + X-PAYMENT──▶ store ──/verify, /settle──▶ x402 facilitator ──▶ Solana devnet
-     ◀── 200 skill JSON + X-PAYMENT-RESPONSE (transaction signature)
+Coco ──POST /api/skills/litter-spotter──────────▶ skill
+     ◀── 402 + paymentRequirements ─────────────  (payTo = the skill's wallet, amount, USDC, feePayer)
+Coco's wallet signs one USDC transfer (no popup, no human)
+Coco ──POST again + X-PAYMENT ──────────────────▶ skill ──/verify, /settle──▶ x402 facilitator ──▶ Solana devnet
+     ◀── 200 result + X-PAYMENT-RESPONSE (transaction signature)
 ```
 
-- **Community treasury** = the Solana wallet you connect (Solflare, Phantom, Backpack…). It tops up Coco with one button.
-- **Coco's spending wallet** = a small devnet wallet created in your browser. Its key never leaves the browser and is never shown.
-- **Daily budget** (1 USDC by default, editable). When it's used up, Coco stops and says so. Coco also refuses to pay more than a skill's listed price.
-- The facilitator pays the network fee, so Coco needs no SOL. The top-up also opens the developers' USDC accounts, since Coco can't pay for that.
-
-## What's real today
-
-- **Any Solana wallet** works: the page uses the [Wallet Standard](https://github.com/wallet-standard/wallet-standard), so every compatible wallet installed in the browser (Solflare, Phantom, Backpack, Glow…) shows up in a picker. On phones, "Open in Solflare / Phantom / Backpack" reopens the page inside the wallet app.
-- **Coco pays on its own** with x402 through the store's server (`/api/skills/:id`) and an x402 facilitator ([Ultravioleta DAO](https://facilitator.ultravioletadao.xyz) by default).
-- **Backup:** with *Who pays: Treasury*, payments are **USDC** transfers on **Solana devnet** (SOL also works) that you approve in your wallet, verifiable on Solana Explorer. *Pay in: USDC · x402 (beta)* sends the same payment through the facilitator so it pays the network fee.
-- Votes, new skills and closed rounds are saved on **Solana devnet** as memos signed by the voter's wallet, so everyone sees the same board. One wallet, one vote (the latest vote counts).
-- The robot is a simulation in the browser.
-- Without a wallet connected, the page runs in simulated mode.
-
-<p align="center">
-  <img src="assets/first-payment.png" alt="First confirmed payment on Solana Explorer" width="640">
-</p>
+- **Coco's wallet** is one shared devnet wallet held by the server, with a **daily budget** (1 USDC). When it's used up, Coco stops and says so. It only pays a skill's own wallet, at the listed price, and never itself.
+- **Every skill has its own wallet**, so the USDC goes straight to whoever made the skill (or to the reviewer who answered).
+- **Visitors need no wallet** to watch Coco work. Anyone can top Coco up from their Solana wallet (Solflare, Phantom, Backpack…).
+- The AI costs real money, so each visitor gets 5 photos a day and Coco analyzes up to 100 a day in total.
+- The facilitator pays the network fee. Default: [Ultravioleta DAO](https://facilitator.ultravioletadao.xyz); configurable, with a built-in fallback that verifies and submits payments on the server.
 
 ## Run it locally
-
-It is a single static page, no build step.
 
 ```bash
 git clone https://github.com/katamar-lang/isla-skills.git
 cd isla-skills
-npx serve .
+npm install
 ```
-
-Then open the local address in Chrome or Brave with your Solana wallet (Solflare, Phantom, Backpack…) set to **Solana Devnet**. Wallets don't connect on `file://` pages, so use a local server.
-
-`npx serve` only serves the page. To also run the x402 skill store (`/api/skills/:id`) locally, use the Netlify CLI instead:
 
 ```bash
 npx netlify-cli dev --dir . --functions netlify/functions
 ```
 
-The facilitator is set with the environment variable `X402_FACILITATOR_URL` (default `https://facilitator.ultravioletadao.xyz`). `SOLANA_RPC_URL` changes the devnet RPC used to read community skills.
+The server needs these environment variables (in a local `.env`, never committed, or in Netlify):
 
-You need a little devnet SOL for network fees (use the **Get devnet SOL** button or https://faucet.solana.com) and devnet USDC to pay for skills (https://faucet.circle.com, choose Solana Devnet).
+| Variable | What |
+|---|---|
+| `COCO_SECRET_KEY`, `SPONSOR_SECRET_KEY` | Devnet keys. Create them on your computer with `node scripts/new-keys.mjs` |
+| `ANTHROPIC_API_KEY` | For Litter Spotter |
+| `LITTER_SPOTTER_WALLET`, `CLEANUP_PLANNER_WALLET` | Payout wallets of each skill's maker |
+| `X402_FACILITATOR_URL` | Facilitator URL, or `local` to verify and submit on the server |
+
+Coco needs devnet USDC (send it from the page with your wallet; get test USDC at https://faucet.circle.com, Solana Devnet) and the sponsor wallet needs a little devnet SOL (https://faucet.solana.com).
 
 ## Project files
 
 | File | What it is |
 |---|---|
-| `index.html` | The whole app: vote, robot, skill store, payments |
-| `netlify/functions/skills.mjs` | The x402 skill store: `GET /api/skills/:id` answers 402, then verifies and settles the payment through the facilitator and returns the skill |
-| `web3.min.js` | Solana web3.js 1.95.3 (IIFE build) with a Buffer polyfill, bundled so the page works without external CDNs |
-| `favicon.png`, `apple-touch-icon.png` | Browser icons |
-| `assets/` | Cover, logo and a screenshot of the first payment |
+| `index.html` | Beach Patrol: photo, timeline, who pays whom, live numbers, top up |
+| `review.html` | Human Reviewer page: "Earn by helping robots, from anywhere." |
+| `wallet.js` | Any Solana wallet through the Wallet Standard, plus phone links |
+| `netlify/functions/` | `skills` (the x402 store), `coco` (Coco's wallet), `reviews`, `stats` |
+| `netlify/lib/` | Shared server code: x402, Solana, Claude, planner, storage |
+| `web3.min.js` | Solana web3.js 1.95.3 with a Buffer polyfill |
 
 ## Roadmap
 
-- [x] Community demo with a simulated robot and devnet payments
-- [x] Payments in USDC (devnet), with SOL as an option
-- [x] Skills and votes saved on Solana devnet, so everyone sees the same state
-- [x] One wallet, one vote, signed with the wallet
-- [ ] Solana program for the skill registry and pay-per-use
-- [ ] A low-cost open-source robot arm running a real skill
-- [x] Gasless USDC payments through an x402 facilitator
+- [x] Skills as paid services with x402 on Solana devnet
+- [x] A robot that pays on its own, with a daily budget
+- [x] AI skill (Litter Spotter) and human skill (Human Reviewer)
 - [x] Any Solana wallet (Wallet Standard)
-- [x] The robot pays on its own with x402, with a daily budget
+- [x] Usage numbers read from Solana
+- [ ] Open the store to outside developers
+- [ ] A low-cost open-source robot arm running a real skill
+- [ ] People with limited mobility operating robots remotely and getting paid per task
+- [ ] Solana program for the skill registry; mainnet
 
 ## License
 

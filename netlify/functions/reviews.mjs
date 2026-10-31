@@ -5,7 +5,7 @@
    Storage: Netlify Blobs keys review/<id>, pending/<id>, spot/<id> (see netlify/lib/store.mjs). */
 import { json, preflight, SKILLS } from "../lib/config.mjs";
 import { isAddress, ensureUsdcAccount, PublicKey } from "../lib/solana.mjs";
-import { getJSON, setJSON, db } from "../lib/store.mjs";
+import { getJSON, setJSON, del, list as keys, TTL } from "../lib/store.mjs";
 import { reviewState } from "./skills.mjs";
 
 const err = (status, error, code) => json(status, { error, code });
@@ -14,10 +14,10 @@ const pub = r => ({ id: r.id, question: r.question, litterOption: r.litterOption
   answer: r.answer || null, transaction: r.transaction || null, priceUsdc: SKILLS["human-reviewer"].price / 1e6 });
 
 async function list(url) {
-  const { blobs } = await db().list({ prefix: "pending/" });
+  const pendingKeys = await keys("pending/");
   const out = [];
-  for (const b of blobs.slice(0, 30)) {
-    const r = await reviewState(b.key.slice("pending/".length));
+  for (const k of pendingKeys.slice(0, 30)) {
+    const r = await reviewState(k.slice("pending/".length));
     if (r && r.status === "pending") out.push(pub(r));
   }
   const wallet = url.searchParams.get("wallet");
@@ -48,8 +48,8 @@ async function answer(req, id) {
   if (r.status === "expired") return err(410, "Too late: Coco already moved on with the AI's answer. No payment for this one.", "expired");
   if (r.status !== "pending") return err(409, "Someone else answered first.", "taken");
   r.status = "answered"; r.answer = a; r.reviewer = wallet; r.answeredAt = Date.now();
-  await setJSON(`review/${id}`, r); await db().delete(`pending/${id}`);
-  const idx = (await getJSON(`reviewer/${wallet}`)) || []; idx.push(id); await setJSON(`reviewer/${wallet}`, idx.slice(-50));
+  await setJSON(`review/${id}`, r, TTL.week); await del(`pending/${id}`);
+  const idx = (await getJSON(`reviewer/${wallet}`)) || []; idx.push(id); await setJSON(`reviewer/${wallet}`, idx.slice(-50), TTL.week);
   // The reviewer needs a USDC account to be paid; the sponsor wallet opens it if needed.
   let account = "ok";
   try { const e = await ensureUsdcAccount(new PublicKey(wallet)); if (!e.ok) account = "missing"; } catch (e) { account = "unknown"; }

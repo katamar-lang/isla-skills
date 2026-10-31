@@ -8,7 +8,7 @@
 
 Robots are learning new skills through software, but there's no way to pay for a skill each time a robot uses it. On Isla Skills, a skill is an API: the robot sends something (a photo, a reading), the skill answers, and the robot pays for that answer. Skills can come from AI models and from people.
 
-**Live demo:** https://isla-skills-dao-2b40fb.netlify.app · **Earn by reviewing:** https://isla-skills-dao-2b40fb.netlify.app/review
+**Live demo:** moving to Vercel (new link soon). Previous version: https://isla-skills-dao-2b40fb.netlify.app
 
 ## Beach Patrol
 
@@ -51,8 +51,10 @@ npm install
 ```
 
 ```bash
-npx netlify-cli dev --dir . --functions netlify/functions
+npx vercel dev
 ```
+
+The site runs on Vercel (free plan) with Upstash Redis for storage; the same code also runs on Netlify (`npx netlify-cli dev --dir . --functions netlify/functions`, Netlify Blobs).
 
 The server needs these environment variables (in a local `.env`, never committed, or in Netlify):
 
@@ -73,6 +75,7 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 | `review.html` | Human Reviewer page: "Earn by helping robots, from anywhere." |
 | `wallet.js` | Any Solana wallet through the Wallet Standard, plus phone links |
 | `netlify/functions/` | `skills` (the x402 store), `coco` (Coco's wallet), `reviews`, `stats` |
+| `api/router.mjs`, `vercel.json` | Runs the same handlers on Vercel |
 | `netlify/lib/` | Shared server code: x402, Solana, Claude, planner, storage |
 | `web3.min.js` | Solana web3.js 1.95.3 with a Buffer polyfill |
 

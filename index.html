@@ -191,7 +191,9 @@ function shrink(src){ // max 1024 px JPEG, so the photo is small and fast
   const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight,k=Math.min(1,1024/Math.max(w,h));
   const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
   c.getContext("2d").drawImage(src,0,0,c.width,c.height);
-  return c.toDataURL("image/jpeg",0.8);
+  let out=c.toDataURL("image/jpeg",0.8);
+  if(out.length>850000)out=c.toDataURL("image/jpeg",0.55); // keep it under the server's limit
+  return out;
 }
 function setPhoto(dataUrl){
   photo=dataUrl;$("photoImg").src=dataUrl;$("photoImg").hidden=false;$("photoEmpty").hidden=true;

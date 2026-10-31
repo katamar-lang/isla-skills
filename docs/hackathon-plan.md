@@ -89,7 +89,8 @@ Use the Solana Wallet Standard so any compatible wallet appears in a picker. Kee
 - **AI cost limits:** 100 photos a day in total, 5 per visitor (hashed IP + day), checked before any payment or AI call. The page says clearly when a limit is reached.
 - **Coco and every skill have different wallets**, shown side by side on the page. Coco's wallet service refuses to pay its own address.
 - **The 5% "community" share is gone from the copy**: there is no community treasury wallet, so 100% of each price goes to the skill's maker.
-- **Storage for reviews:** Netlify Blobs (built into Netlify, nothing extra to run).
+- **Storage for reviews:** Netlify Blobs at first; on Vercel, Upstash Redis (free).
+- **Nov 1: no money for any service.** Netlify's free credits are spent until Nov 20, after the deadline, so the site moves to **Vercel Hobby (free)**. The AI for Litter Spotter needs free credits (ask the organizers) or a free tier: decision pending.
 
 ## Checklist
 - [x] Coco's spending wallet with daily budget (owner confirmed: server-side, 1 USDC/day)
@@ -102,4 +103,5 @@ Use the Solana Wallet Standard so any compatible wallet appears in a picker. Kee
 - [x] Public usage counters from Solana (`/api/stats`)
 - [x] README rewritten for the new focus
 - [ ] Real beach photos from Florianópolis in `assets/samples/beach-1.jpg` … `beach-3.jpg` (so judges can try without a camera)
-- [ ] Netlify environment variables set (see CLAUDE.md → Setup)
+- [ ] Vercel project + Upstash Redis + environment variables (see CLAUDE.md → Setup)
+- [ ] AI key for Litter Spotter without paying (organizers' credits or a free tier)

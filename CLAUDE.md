@@ -18,12 +18,13 @@ Pitch: "Robots are learning new skills through software, but there's no way to p
 
 **Nothing on the page may be false.** There is no community vote and no 5% community share anymore (both removed Oct 31); 100% of each price goes to the skill's maker.
 
-- Live demo: https://isla-skills-dao-2b40fb.netlify.app (reviewers: `/review`)
+- **Hosting moved to Vercel (Nov 1, 2026):** Netlify's free credits are spent until Nov 20 (after the Nov 11 deadline) and the owner can't pay for any service. Vercel Hobby (free, no card) + Upstash Redis (free) via Vercel. The old Netlify site https://isla-skills-dao-2b40fb.netlify.app stays up with the previous version. The code still runs on Netlify too.
+- **The owner has no money for paid APIs.** Litter Spotter needs an AI key: ask the hackathon organizers for credits, or use a free tier (decision pending).
 - Everything runs on **Solana devnet** (test USDC).
 
 ## How the code is organised
 
-No build step for the pages. Netlify Functions (Node, ES modules) hold the server.
+No build step for the pages. The server is a set of handlers (Node, ES modules, Web `Request` → `Response`) in `netlify/functions/`. On **Vercel**, `api/router.mjs` is the only function: `vercel.json` rewrites `/api/<path>` to `/api/router?p=<path>` and the router calls the same handlers with the original URL and the visitor IP (`x-forwarded-for`). On Netlify they run as Netlify Functions directly.
 
 | File | What it is |
 |---|---|
@@ -37,6 +38,7 @@ No build step for the pages. Netlify Functions (Node, ES modules) hold the serve
 | `netlify/functions/reviews.mjs` | `GET /api/reviews[?wallet=]`, `GET /api/reviews/:id`, `GET /api/reviews/:id/image`, `POST /api/reviews/:id/answer` |
 | `netlify/functions/stats.mjs` | `GET /api/stats`: public numbers read from Solana (every USDC transfer out of Coco's USDC account), cached 30 s, cache cleared after each settled payment |
 | `netlify/lib/*.mjs` | `config` (prices, limits, skill wallets), `store` (Netlify Blobs), `solana` (keys, USDC instructions, sponsor), `x402` (requirements, remote + local facilitator), `spotter` (Claude), `planner` |
+| `api/router.mjs`, `vercel.json`, `.vercelignore` | Vercel: one function (maxDuration 30 s), static files copied to `public/` by `buildCommand`, `cleanUrls` serves `/review` |
 | `scripts/new-keys.mjs` | The owner runs it **on her computer** to create `COCO_SECRET_KEY` and `SPONSOR_SECRET_KEY`. Never run it where the output is logged or shown in chat |
 
 ### The patrol, step by step (browser = Coco's body, server = Coco's wallet)
@@ -54,13 +56,13 @@ Known skill · `resource` = this store's `/api/skills/<id>` · exact/solana-devn
 
 `PHOTOS_PER_DAY` (100) and `PHOTOS_PER_VISITOR_PER_DAY` (5), checked before the 402 and before calling Claude; a photo is counted before the AI call. Visitor = sha256(UTC day + IP), not stored in clear.
 
-### Netlify Blobs keys (store `isla-skills`, strong consistency)
+### Storage keys (Upstash Redis on Vercel when `KV_REST_API_URL`/`KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set; otherwise Netlify Blobs store `isla-skills`)
 
-`coco/spent/<day>`, `coco/pays/<day>/<visitor>`, `photos/<day>`, `photos/<day>/<visitor>`, `spot/<id>` (photo + AI result, only when unsure), `review/<id>`, `pending/<id>`, `reviewer/<wallet>` (last 50 review ids), `stats/cache`. No transactions: counters are read-modify-write (fine for a demo; the money in Coco's wallet is the hard limit).
+Redis is used through its REST API with plain `fetch` (no package); counters use `INCRBY` (atomic) and expire after 2 days; spots expire after 1 day, reviews after 7. Keys: `coco/spent/<day>`, `coco/pays/<day>/<visitor>`, `photos/<day>`, `photos/<day>/<visitor>`, `spot/<id>` (photo + AI result, only when unsure), `review/<id>`, `pending/<id>`, `reviewer/<wallet>` (last 50 review ids), `stats/cache`. On Netlify Blobs counters are read-modify-write (fine for a demo; the money in Coco's wallet is the hard limit). Photos are limited to ~650 KB (900k base64 chars) because the free Redis plan takes up to 1 MB per request.
 
-## Setup on Netlify (owner)
+## Setup (owner)
 
-Environment variables (Site configuration → Environment variables, mark secrets as secret):
+On **Vercel**: Project → Settings → Environment Variables (all environments). Redis: Project → Storage → Upstash for Redis (free) → connect, which adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`. On Netlify the same variables go in Site configuration → Environment variables.
 
 | Variable | What |
 |---|---|
@@ -82,11 +84,16 @@ Then top up Coco with devnet USDC from the page ("Top up Coco"), and send the sp
 
 ## Deploying
 
-Pushing to `main` deploys: `.github/workflows/deploy.yml` runs `npm ci`, copies the site files to `public/` (if you add a file the site needs, add it to the `cp` line), and runs `netlify deploy --prod --functions=netlify/functions` to site `774dae81-dcf7-42e4-b800-fad91c6ba090`. Token: repo secret `NETLIFY_AUTH_TOKEN`. Never print or commit tokens or keys.
+**Vercel** (current): the Vercel GitHub app deploys every push. `main` → production; other branches → preview URLs (good for testing before merging). If you add a file the site needs, add it to `buildCommand` in `vercel.json`.
+
+**Netlify** (paused): `.github/workflows/deploy.yml` now runs only by hand (Actions → Run workflow); it runs `npm ci`, copies the site files to `public/` (keep its `cp` line in sync) and deploys with functions to site `774dae81-dcf7-42e4-b800-fad91c6ba090` (token: repo secret `NETLIFY_AUTH_TOKEN`). Each production deploy uses Netlify credits.
+
+Never print or commit tokens or keys.
 
 ## Testing
 
 - Syntax: `node --check` on every `netlify/**/*.mjs`, and on the inline script of each page.
+- Run the server and browser tests both ways: as Netlify (handlers called directly, in-memory store) and as Vercel (through `api/router.mjs` with the `?p=` rewrite, and a fake Upstash REST endpoint).
 - Server: import the functions in Node with a fake ledger (`setConnection`), in-memory Blobs (`setStore(memoryStore())`), a fake Claude (`setClaudeClient`) and a fake facilitator on `globalThis.fetch`; test both `X402_FACILITATOR_URL=https://…` and `local`. Decode the transactions with `@solana/spl-token`.
 - End to end: Playwright with a static server and `context.route("**/api/**")` calling the functions; a fake Wallet Standard wallet via `addInitScript`; two contexts (Coco page + reviewer page on a phone viewport). Screenshots at 1280 and 390 px.
 - Bundling: `npx @netlify/zip-it-and-ship-it netlify/functions <out>` must list the 4 functions with their routes.
@@ -97,7 +104,9 @@ Pushing to `main` deploys: `.github/workflows/deploy.yml` runs `npm ci`, copies 
 - **Real devnet test, Nov 1 2026 (from this repo's functions, test wallets, real facilitators): all three work end to end.** Ultravioleta (`https://facilitator.ultravioletadao.xyz`, fee payer `6xNPewUd…`), PayAI (`https://facilitator.payai.network`, fee payer `2wKupLR9…`) and plan B (`local`) each verified and settled a Cleanup Planner payment and a Human Reviewer payment (finalized on devnet, e.g. tx `3fMvf6hU…`). The old `contract_call_failed` did not appear. Paid call times: 1.2–2.9 s (settle 1.2–2.7 s). Litter Spotter (Claude) was not part of this test: no API key here.
 - Confirmations poll `getSignatureStatuses` (`confirm()` in `netlify/lib/solana.mjs`) instead of web3.js websockets, which time out in serverless functions.
 - The public devnet RPC sometimes answers 429 (rate limit). If that shows up on the live site, set `SOLANA_RPC_URL` to a free devnet RPC (e.g. Helius).
-- Netlify Functions have a time limit (10 s by default on many plans). The paid Litter Spotter call runs verify ∥ Claude, then settle; measure on the live site (`Server-Timing` header).
+- Function time limit: Vercel `maxDuration` is 30 s in `vercel.json`. The paid Litter Spotter call runs verify ∥ Claude, then settle; measure on the live site (`Server-Timing` header).
+- Vercel config (`vercel.json`, Web-handler exports in `api/router.mjs`) is untested on Vercel itself: no Vercel access from the cloud session. Check the first preview deploy.
+- Vercel protects preview URLs with Vercel login by default: fine for the owner's tests; judges should get the production URL.
 - Wallet Standard, Solflare and Backpack were tested only with simulated wallets. Phantom was confirmed with real payments in the earlier version.
 - Coco is shared: anyone can make it spend, up to the daily budget.
 - X hides posts with `.netlify.app` links; a custom domain (e.g. islaskills.xyz) is on the list.

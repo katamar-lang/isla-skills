@@ -2,6 +2,8 @@
 
 Read this first. It is the handoff from the conversation where the project was built (Oct 27–31, 2026).
 
+> **Current work: read [`docs/hackathon-plan.md`](docs/hackathon-plan.md).** On Oct 31 the focus changed: skills are paid-per-use services (x402), the main demo is **Beach Patrol**, the community vote is being removed, and an "Ask a human" skill is added. That file is the build spec and overrides the roadmap below where they differ.
+
 ## What it is
 
 Isla Skills is an **app store for robot skills, paid per use** on Solana. Developers publish skills with a price per use; every time a robot uses a skill, the developer gets paid in USDC.

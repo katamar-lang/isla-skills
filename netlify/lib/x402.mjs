@@ -3,7 +3,7 @@
    X402_FACILITATOR_URL=local: this server checks and submits the payment itself, with the
    sponsor wallet (SPONSOR_SECRET_KEY, a little devnet SOL) paying the network fee. */
 import { NETWORK, USDC_MINT, FACILITATOR, json } from "./config.mjs";
-import { connection, sponsorKeypair, ataOf, isAddress, PublicKey, Transaction, TOKEN_PROGRAM, COMPUTE_BUDGET, MINT } from "./solana.mjs";
+import { connection, confirm, sponsorKeypair, ataOf, isAddress, PublicKey, Transaction, TOKEN_PROGRAM, COMPUTE_BUDGET, MINT } from "./solana.mjs";
 
 export const isLocal = () => FACILITATOR() === "local";
 let feePayerCache = { url: null, value: null };
@@ -75,8 +75,7 @@ async function localSettle(paymentPayload, reqs) {
   r.t.partialSign(sponsorKeypair());
   const c = connection();
   const sig = await c.sendRawTransaction(r.t.serialize());
-  const res = await c.confirmTransaction(sig, "confirmed");
-  if (res.value && res.value.err) return { success: false, errorReason: "transaction_failed" };
+  try { await confirm(sig); } catch (e) { return { success: false, errorReason: String(e.message).slice(0, 80) }; }
   return { success: true, transaction: sig, network: NETWORK, payer: r.owner };
 }
 

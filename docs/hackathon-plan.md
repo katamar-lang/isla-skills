@@ -93,7 +93,7 @@ Use the Solana Wallet Standard so any compatible wallet appears in a picker. Kee
 
 ## Checklist
 - [x] Coco's spending wallet with daily budget (owner confirmed: server-side, 1 USDC/day)
-- [ ] x402 skill store working end to end on devnet (or plan B) · built and tested with a simulated chain and facilitator, both remote and plan B (`X402_FACILITATOR_URL=local`); **needs the real devnet test on the live site**
+- [x] x402 skill store working end to end on devnet · real test Nov 1: Ultravioleta, PayAI and plan B (`local`) all settled real payments (Cleanup Planner + Human Reviewer). Still to check on the live site: Litter Spotter with the real Claude key, and timing inside Netlify
 - [x] Beach Patrol: Litter Spotter + Cleanup Planner, chained payments, camera/upload/desk-robot camera
 - [x] Community vote removed
 - [x] Ask a human: /review page, paid reviews, 60 s fallback

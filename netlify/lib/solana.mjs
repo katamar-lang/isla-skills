@@ -47,6 +47,18 @@ export function transferCheckedIx(src, dst, owner, amount) {
 }
 export function cuLimitIx(units) { const d = Buffer.alloc(5); d[0] = 2; d.writeUInt32LE(units, 1); return new TransactionInstruction({ programId: COMPUTE_BUDGET, keys: [], data: d }); }
 export function cuPriceIx(micro) { const d = Buffer.alloc(9); d[0] = 3; d.writeBigUInt64LE(BigInt(micro), 1); return new TransactionInstruction({ programId: COMPUTE_BUDGET, keys: [], data: d }); }
+/* Waits for a transaction by asking every 500 ms (HTTP only). Websockets, which web3.js uses by
+   default, are unreliable in serverless functions. */
+export async function confirm(sig, ms = 20000) {
+  const c = connection(), until = Date.now() + ms;
+  while (Date.now() < until) {
+    const st = (await c.getSignatureStatuses([sig])).value[0];
+    if (st && st.err) throw new Error("transaction failed: " + JSON.stringify(st.err).slice(0, 80));
+    if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) return true;
+    await new Promise(r => setTimeout(r, 500));
+  }
+  throw new Error("transaction not confirmed in time");
+}
 export async function usdcUnits(owner) {
   try { const r = await connection().getTokenAccountBalance(ataOf(owner)); return Number(r.value.amount); } catch (e) { return 0; }
 }
@@ -60,7 +72,7 @@ export async function ensureUsdcAccount(owner) {
   const t = new Transaction({ feePayer: sp.publicKey, recentBlockhash: bh.blockhash }).add(createAtaIdempotentIx(sp.publicKey, ata, owner));
   t.sign(sp);
   const sig = await c.sendRawTransaction(t.serialize());
-  await c.confirmTransaction({ signature: sig, blockhash: bh.blockhash, lastValidBlockHeight: bh.lastValidBlockHeight }, "confirmed");
+  await confirm(sig);
   return { ok: true, created: true, sig };
 }
 export { PublicKey, Transaction, Keypair };

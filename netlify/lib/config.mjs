@@ -11,7 +11,7 @@ export const COCO_DAILY_BUDGET = () => int("COCO_DAILY_BUDGET_UNITS", 1_000_000)
 export const PHOTOS_PER_DAY = () => int("PHOTOS_PER_DAY", 100);                        // all visitors together
 export const PHOTOS_PER_VISITOR = () => int("PHOTOS_PER_VISITOR_PER_DAY", 5);
 export const PAYMENTS_PER_VISITOR = () => int("COCO_PAYMENTS_PER_VISITOR_PER_DAY", 40);
-export const REVIEW_SECONDS = 60;
+export const REVIEW_SECONDS = 20; // how long a robot waits for a person
 
 /* The skills. Each one is an independent service with its own payout wallet, never Coco's.
    Set the payout wallets in Netlify (LITTER_SPOTTER_WALLET, CLEANUP_PLANNER_WALLET). The Human

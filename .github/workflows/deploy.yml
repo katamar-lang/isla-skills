@@ -23,5 +23,5 @@ jobs:
           npm ci
           mkdir -p public
           cp index.html review.html style.css wallet.js wallet-adapter.min.js web3.min.js favicon.png apple-touch-icon.png _redirects public/
-          if [ -d assets/samples ]; then mkdir -p public/assets && cp -r assets/samples public/assets/; fi
+          cp -r assets public/
           npx --yes netlify-cli@27.16.2 deploy --prod --no-build --dir=public --functions=netlify/functions --site="$NETLIFY_SITE_ID" --message "Deploy from GitHub ${GITHUB_SHA::7}"

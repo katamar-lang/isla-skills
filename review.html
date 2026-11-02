@@ -1,11 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Isla Skills · Review</title>
 <meta name="description" content="Earn by helping robots, from anywhere. Answer what a robot's AI isn't sure about and get paid in USDC for each review.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Isla Skills">
+<meta property="og:title" content="Isla Skills · Review">
+<meta property="og:description" content="Earn by helping robots, from anywhere. Answer what a robot's AI isn't sure about and get paid in USDC for each review.">
+<meta property="og:url" content="https://isla-skills-dao-2b40fb.netlify.app/review">
+<meta property="og:image" content="https://isla-skills-dao-2b40fb.netlify.app/assets/cover.png">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="800">
+<meta property="og:image:alt" content="Isla Skills: an app store for robot skills, paid per use with x402 on Solana">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Isla Skills · Review">
+<meta name="twitter:description" content="Earn by helping robots, from anywhere. Answer what a robot's AI isn't sure about and get paid in USDC for each review.">
+<meta name="twitter:image" content="https://isla-skills-dao-2b40fb.netlify.app/assets/cover.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
 <div class="wrap" style="max-width:900px">
   <header>
@@ -13,7 +32,7 @@
       <h1>Earn by helping robots, <em>from anywhere.</em></h1>
       <p class="lede">When a robot's AI isn't sure what it sees, it asks a person. You look at the photo, answer with one tap, and the robot pays you in USDC on Solana for that review. This is the <b>Human Reviewer</b> skill on Isla Skills.</p>
     </div>
-    <a class="small" href="./">← Back to Coco</a>
+    <a class="small tap" href="./">← Back to Coco</a>
   </header>
 
   <section>
@@ -30,7 +49,7 @@
 
   <section>
     <h2>Photos waiting for a person <small id="count">checking…</small></h2>
-    <p class="small muted" style="margin:0">Each review pays <b id="price">0.005</b> USDC, sent by the robot as soon as it uses your answer. A robot waits about 60 seconds; after that it goes on with its AI's guess and the review closes unpaid.</p>
+    <p class="small muted" style="margin:0">Each review pays <b id="price">0.005</b> USDC, sent by the robot as soon as it uses your answer. A robot waits about 20 seconds; after that it goes on with its AI's guess and the review closes unpaid.</p>
     <div class="cards" id="cards"></div>
   </section>
 
@@ -118,9 +137,11 @@ function renderMine(list){
   if(!list.length){$("mine").textContent="No reviews yet. Your first one is above when a robot asks.";return}
   const paid=list.filter(x=>x.status==="paid");
   $("mine").innerHTML=`<p style="margin:0 0 6px">${paid.length} paid review${paid.length===1?"":"s"} · ${(paid.length*list[0].priceUsdc).toFixed(3)} USDC earned (latest ${list.length})</p>`+
-    list.map(x=>`<div>${esc(x.question)} → <b>${esc(x.answer==="litter"?"litter":"not litter")}</b> · ${x.status==="paid"?`paid ✓ ${SIG.test(x.transaction||"")?`<a href="https://explorer.solana.com/tx/${x.transaction}?cluster=devnet" target="_blank" rel="noopener">Explorer ↗</a>`:""}`:x.status==="answered"?"waiting for the robot to pay":esc(x.status)}</div>`).join("");
+    list.map(x=>`<div>${esc(x.question)} → <b>${esc(x.answer==="litter"?"litter":"not litter")}</b> · ${x.status==="paid"?`paid ✓ ${SIG.test(x.transaction||"")?`<a class="tap" href="https://explorer.solana.com/tx/${x.transaction}?cluster=devnet" target="_blank" rel="noopener">Explorer ↗</a>`:""}`:x.status==="answered"?"waiting for the robot to pay":esc(x.status)}</div>`).join("");
 }
 setInterval(()=>{document.querySelectorAll("[data-left]").forEach(s=>{const v=Math.max(0,Number(s.textContent)-1);s.textContent=v})},1000);
 setInterval(load,4000);
 renderWallet();IW.connectSilently();
 </script>
+</body>
+</html>

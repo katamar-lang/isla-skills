@@ -18,14 +18,34 @@ function b58decode(s) {
   for (const c of s) { if (c !== "1") break; out.unshift(0); }
   return Uint8Array.from(out);
 }
-/* Accepts a JSON array of 64 numbers (solana-keygen) or a base58 string (wallet export). */
-export function keypairFromEnv(name) {
-  const raw = (process.env[name] || "").trim();
+/* Reads a secret key from an environment variable. Accepts the [ ... ] list of 64 numbers (what
+   scripts/new-keys.mjs prints) or a base58 string (a wallet export). Forgiving: the variable name,
+   "=", quotes, spaces and line breaks around it are ignored. Errors say what is wrong but never
+   include any part of the key. */
+export function parseSecretKey(name, value) {
+  let raw = String(value || "").trim();
   if (!raw) return null;
-  const bytes = raw.startsWith("[") ? Uint8Array.from(JSON.parse(raw)) : b58decode(raw);
-  if (bytes.length !== 64) throw new Error(name + " must be a 64-byte secret key");
-  return Keypair.fromSecretKey(bytes);
+  const at = raw.indexOf(name + "=");
+  if (at >= 0) raw = raw.slice(at + name.length + 1);
+  raw = raw.trim().replace(/^["'`]+|["'`]+$/g, "").trim();
+  let bytes;
+  if (raw.includes("[")) {
+    const end = raw.indexOf("]", raw.indexOf("["));
+    if (end < 0) throw new Error(name + " has a [ but no closing ]: the value looks cut off. Paste it again, from [ to ]");
+    const nums = raw.slice(raw.indexOf("[") + 1, end).split(",").map(x => x.trim()).filter(Boolean);
+    if (!nums.every(x => /^\d{1,3}$/.test(x) && Number(x) <= 255)) throw new Error(name + " has something that isn't a number between [ and ]. Paste it again, from [ to ]");
+    if (nums.length !== 64) throw new Error(name + " has " + nums.length + " numbers between [ and ], it needs 64: the value looks cut off. Paste it again, from [ to ]");
+    bytes = Uint8Array.from(nums.map(Number));
+  } else {
+    const compact = raw.replace(/\s+/g, "");
+    if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(compact)) throw new Error(name + " isn't a [ ... ] list of 64 numbers or a base58 key. Paste only the part from [ to ]");
+    bytes = b58decode(compact);
+    if (bytes.length !== 64) throw new Error(name + " looks like an address or a short key (" + bytes.length + " bytes), not a 64-byte secret key. Paste the [ ... ] part");
+  }
+  try { return Keypair.fromSecretKey(bytes); }
+  catch (e) { throw new Error(name + " has 64 numbers but they don't form a valid key: copy it again from the script output"); }
 }
+export function keypairFromEnv(name) { return parseSecretKey(name, process.env[name]); }
 let coco, sponsor;
 export const cocoKeypair = () => (coco === undefined ? (coco = keypairFromEnv("COCO_SECRET_KEY")) : coco);
 export const sponsorKeypair = () => (sponsor === undefined ? (sponsor = keypairFromEnv("SPONSOR_SECRET_KEY")) : sponsor);

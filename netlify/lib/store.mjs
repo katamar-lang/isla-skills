@@ -33,8 +33,10 @@ export function redisStore(url, token, fetchImpl = globalThis.fetch) {
 export async function db() {
   if (impl) return impl;
   if (redisUrl() && redisToken()) return (impl = redisStore(redisUrl(), redisToken()));
+  // Netlify Blobs: ask for the store on every call. Netlify gives each request a fresh, short-lived
+  // access token; a store kept from an earlier request fails with "Token expired".
   const { getStore } = await import("@netlify/blobs");
-  return (impl = getStore({ name: "isla-skills", consistency: "strong" }));
+  return getStore({ name: "isla-skills", consistency: "strong" });
 }
 export async function getJSON(key) { return (await (await db()).get(key, { type: "json" })) ?? null; }
 /* ttl (seconds) is used by Redis to clean up old data; Netlify Blobs ignores it. */

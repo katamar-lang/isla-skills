@@ -92,7 +92,9 @@ export default async (req, context) => {
     return err(404, "Not found", "not_found");
   } catch (e) {
     console.error("coco", e && e.message);
-    return err(502, "Coco's wallet couldn't reach Solana devnet or the facilitator: " + String(e.message || e).slice(0, 120), "network");
+    const m = String(e.message || e);
+    if (/blobs|storage/i.test(m)) return err(503, "Coco's memory (storage) didn't answer. Try again in a moment.", "storage");
+    return err(502, "Coco's wallet couldn't reach Solana devnet or the facilitator: " + m.slice(0, 120), "network");
   }
 };
 export const config = { path: ["/api/coco", "/api/coco/pay"] };

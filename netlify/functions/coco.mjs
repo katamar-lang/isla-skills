@@ -11,18 +11,26 @@ import { reviewState, skillInfo } from "./skills.mjs";
 
 const err = (status, error, code, extra = {}) => json(status, { error, code, ...extra });
 
+/* Says what is wrong with a key without ever showing it. */
+function keyCheck(name, get) {
+  if (!process.env[name] || !process.env[name].trim()) return { key: null, problem: name + " is missing in this deploy" };
+  try { return { key: get(), problem: null }; } catch (e) { return { key: null, problem: name + " is set but not valid: paste only the [ ... ] part (64 numbers), without the name or =" }; }
+}
+
 async function status(req, context) {
-  const k = cocoKeypair(), day = today(), vid = visitorId(req, context);
+  const c = keyCheck("COCO_SECRET_KEY", cocoKeypair), s = keyCheck("SPONSOR_SECRET_KEY", sponsorKeypair);
+  const k = c.key, day = today(), vid = visitorId(req, context);
   const [spent, photos, mine] = await Promise.all([count(`coco/spent/${day}`), count(`photos/${day}`), count(`photos/${day}/${vid}`)]);
   let balance = null;
   if (k) balance = await usdcUnits(k.publicKey).catch(() => null);
   return json(200, {
     address: k ? k.publicKey.toBase58() : null, usdcUnits: balance,
-    sponsorAddress: sponsorKeypair() ? sponsorKeypair().publicKey.toBase58() : null, // public, so the owner can send it devnet SOL
+    sponsorAddress: s.key ? s.key.publicKey.toBase58() : null, // public, so the owner can send it devnet SOL
+    problems: [c.problem, s.problem, process.env.ANTHROPIC_API_KEY ? null : "ANTHROPIC_API_KEY is missing in this deploy"].filter(Boolean),
     budget: { day, limitUnits: COCO_DAILY_BUDGET(), spentUnits: spent },
     photos: { today: photos, limit: PHOTOS_PER_DAY(), yours: mine, perVisitor: PHOTOS_PER_VISITOR() },
     facilitator: isLocal() ? "local (this server, plan B)" : FACILITATOR(),
-    ready: { coco: !!k, ai: !!process.env.ANTHROPIC_API_KEY, sponsor: !!sponsorKeypair() },
+    ready: { coco: !!k, ai: !!process.env.ANTHROPIC_API_KEY, sponsor: !!s.key },
     skills: Object.keys(SKILLS).map(skillInfo)
   });
 }

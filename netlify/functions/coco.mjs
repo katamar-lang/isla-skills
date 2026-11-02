@@ -14,7 +14,7 @@ const err = (status, error, code, extra = {}) => json(status, { error, code, ...
 /* Says what is wrong with a key without ever showing it. */
 function keyCheck(name, get) {
   if (!process.env[name] || !process.env[name].trim()) return { key: null, problem: name + " is missing in this deploy" };
-  try { return { key: get(), problem: null }; } catch (e) { return { key: null, problem: name + " is set but not valid: paste only the [ ... ] part (64 numbers), without the name or =" }; }
+  try { return { key: get(), problem: null }; } catch (e) { return { key: null, problem: String(e.message || e).startsWith(name) ? e.message : name + " is set but not valid" }; }
 }
 
 async function status(req, context) {

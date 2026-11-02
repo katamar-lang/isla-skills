@@ -20,13 +20,15 @@ function keyCheck(name, get) {
 async function status(req, context) {
   const c = keyCheck("COCO_SECRET_KEY", cocoKeypair), s = keyCheck("SPONSOR_SECRET_KEY", sponsorKeypair);
   const k = c.key, day = today(), vid = visitorId(req, context);
-  const [spent, photos, mine] = await Promise.all([count(`coco/spent/${day}`), count(`photos/${day}`), count(`photos/${day}/${vid}`)]);
+  let spent = 0, photos = 0, mine = 0, storageProblem = null;
+  try { [spent, photos, mine] = await Promise.all([count(`coco/spent/${day}`), count(`photos/${day}`), count(`photos/${day}/${vid}`)]); }
+  catch (e) { storageProblem = "storage isn't available: " + String(e.message || e).slice(0, 120); }
   let balance = null;
   if (k) balance = await usdcUnits(k.publicKey).catch(() => null);
   return json(200, {
     address: k ? k.publicKey.toBase58() : null, usdcUnits: balance,
     sponsorAddress: s.key ? s.key.publicKey.toBase58() : null, // public, so the owner can send it devnet SOL
-    problems: [c.problem, s.problem, process.env.ANTHROPIC_API_KEY ? null : "ANTHROPIC_API_KEY is missing in this deploy"].filter(Boolean),
+    problems: [c.problem, s.problem, process.env.ANTHROPIC_API_KEY ? null : "ANTHROPIC_API_KEY is missing in this deploy", storageProblem].filter(Boolean),
     budget: { day, limitUnits: COCO_DAILY_BUDGET(), spentUnits: spent },
     photos: { today: photos, limit: PHOTOS_PER_DAY(), yours: mine, perVisitor: PHOTOS_PER_VISITOR() },
     facilitator: isLocal() ? "local (this server, plan B)" : FACILITATOR(),

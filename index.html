@@ -141,6 +141,23 @@
   <p class="small muted foot">Prototype for IslandHack v5 · IslandDAO, Florianópolis. Coco is simulated: a phone or laptop camera plays its eyes. Litter Spotter uses Claude (Haiku) with vision. Payments are real USDC transfers on Solana <b>devnet</b> (test money), with x402<span id="facTxt">.</span></p>
 </div>
 
+<!-- Patrol progress, phones only: a bottom sheet that shows the same patrol as the timeline -->
+<div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+  <div class="sheetPanel" id="sheetPanel">
+    <div class="sheetHead">
+      <img id="sheetImg" alt="The photo Coco is checking">
+      <div class="sheetHeadText">
+        <h2 id="sheetTitle" tabindex="-1">Coco is on patrol</h2>
+        <p class="small muted" style="margin:0">Each skill: 402 → paid → result</p>
+      </div>
+      <button type="button" id="sheetClose" class="sheetX" aria-label="Close progress (the patrol keeps going)">✕</button>
+    </div>
+    <ol class="sheetSteps" id="sheetSteps"></ol>
+    <div id="sheetEnd"></div>
+    <p id="sheetLive" class="srOnly" aria-live="polite"></p>
+  </div>
+</div>
+
 <script src="web3.min.js"></script>
 <script src="wallet-adapter.min.js"></script>
 <script src="wallet.js"></script>
@@ -225,13 +242,16 @@ function shrink(src){ // max 1024 px JPEG, so the photo is small and fast
   if(out.length>850000)out=c.toDataURL("image/jpeg",0.55); // keep it under the server's limit
   return out;
 }
-function setPhoto(dataUrl){
+const small=()=>matchMedia("(max-width: 767px)").matches;
+const reducedMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+function setPhoto(dataUrl,{start}={}){
   photo=dataUrl;$("photoImg").src=dataUrl;$("photoImg").hidden=false;$("photoEmpty").hidden=true;
   $("start").disabled=busy;$("msg").textContent="";
+  if(start&&small()&&!busy)patrol(); // on a phone the timeline is far below: start right away, in the progress sheet
 }
 $("file").onchange=e=>{
   const f=e.target.files[0];if(!f)return;stopCam();
-  const img=new Image();img.onload=()=>{setPhoto(shrink(img));URL.revokeObjectURL(img.src)};
+  const img=new Image();img.onload=()=>{setPhoto(shrink(img),{start:true});URL.revokeObjectURL(img.src)};
   img.onerror=()=>{$("msg").textContent="That file isn't a photo Coco can read. Try a JPEG or PNG."};
   img.src=URL.createObjectURL(f);
 };
@@ -257,7 +277,7 @@ SAMPLES.forEach(x=>{
   const img=new Image();img.alt=x.alt;img.className="thumb";
   img.onload=()=>{$("samples").hidden=false};
   img.src="assets/samples/"+x.file;
-  b.appendChild(img);b.onclick=()=>{stopCam();setPhoto(shrink(img))};
+  b.appendChild(img);b.onclick=()=>{stopCam();setPhoto(shrink(img),{start:true})};
   $("samples").appendChild(b);
 });
 $("pickPhoto").onclick=()=>$("file").click();
@@ -271,6 +291,7 @@ function renderTimeline(){
     ${s.chips?`<span class="chips">${s.chips.map(c=>`<span class="chip ${c.state||""}">${c.html}</span>`).join('<span class="sep">→</span>')}</span>`:""}
     ${s.html?`<span class="detail">${s.html}</span>`:""}
   </li>`).join("");
+  renderSheet();
 }
 const chip=(step,html,st="ok")=>{(step.chips=step.chips||[]).push({html,state:st});renderTimeline();return step.chips[step.chips.length-1]};
 
@@ -299,9 +320,10 @@ async function buy(skillId,body,step,extra={}){
     c.html=`reconnecting… (${tries+1})`;renderTimeline();
     await waitVisible();await sleep(1500*(tries+1));
   }
-  if(!r.ok){c.state="err";c.html="not paid";step.state="err";renderTimeline();throw new Stop((r.json.error||`The skill answered ${r.status}.`)+(r.json.charged===false?" Coco wasn't charged.":""))}
+  if(!r.ok){c.state="err";c.html="not paid";step.state="err";renderTimeline();const em=String(r.json.error||`The skill answered ${r.status}.`).trim();throw new Stop((/[.!?]$/.test(em)?em:em+".")+(r.json.charged===false?" Coco wasn't charged.":""))}
   let settled={};try{settled=JSON.parse(atob(r.headers.get("X-PAYMENT-RESPONSE")||""))}catch(e){}
   const sig=settled.transaction||r.json.payment&&r.json.payment.transaction;
+  step.paid={units:Number(req.maxAmountRequired),sig};
   c.state="ok";c.html=`paid ✓ ${txLink(sig)}`;step.state="ok";renderTimeline();
   return r.json.result;
 }
@@ -311,11 +333,13 @@ async function patrol(){
   if(!photo&&stream)setPhoto(shrink($("cam")));
   if(!photo){$("msg").textContent="Take or upload a photo first.";return}
   busy=true;$("start").disabled=true;$("botFace").classList.add("work");$("result").hidden=true;$("msg").textContent="";
-  steps=[];
+  steps=[];run={running:true,photo};announced={};
+  if(small())openSheet();
+  else $("timeline").closest("section").scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"start"});
   addStep({title:"1 · Photo",state:"ok",html:`<img class="mini" src="${photo}" alt="">`});
   try{
     // Litter Spotter
-    const s1=addStep({title:"2 · Litter Spotter",kind:"AI",state:"doing"});
+    const s1=addStep({title:"2 · Litter Spotter",kind:"AI",state:"doing",skill:"litter-spotter"});
     const spot=await buy("litter-spotter",{image:photo},s1);
     s1.html=esc(spot.summary||`${spot.items.length} kinds of litter found.`);renderTimeline();
     let items=spot.items.slice();
@@ -323,7 +347,7 @@ async function patrol(){
     if(spot.unsure){
       const u=spot.unsure;
       addStep({title:"The AI isn't sure",state:"warn",html:`“${esc(u.question)}” Coco asks a person.`});
-      const s2=addStep({title:"3 · Human Reviewer",kind:"Person",state:"doing"});
+      const s2=addStep({title:"3 · Human Reviewer",kind:"Person",state:"doing",skill:"human-reviewer"});
       const human=await askHuman(spot.spotId,s2);
       const verdict=human&&human.answer?human.answer:u.aiGuess;
       if(verdict==="not_litter")items=items.filter((_,i)=>i!==u.itemIndex);
@@ -332,18 +356,20 @@ async function patrol(){
       s2.html=human&&human.answer?`A person answered: <b>${guess}</b>. Coco uses the human answer.`
         :human&&human.skipped?`Skipped. Coco goes on with the AI's guess (<b>${guess}</b>) and pays nothing.`
         :`Nobody answered in ${human&&human.seconds||20} seconds. Coco goes on with the AI's guess (<b>${guess}</b>) and pays nothing.`;
-      if(!(human&&human.answer))s2.state="warn";
+      if(!(human&&human.answer)){s2.state="warn";s2.outcome=human&&human.skipped?"skipped":"noanswer"}
       renderTimeline();
     }
     // Cleanup Planner
-    const s3=addStep({title:`${spot.unsure?4:3} · Cleanup Planner`,kind:"Planner",state:"doing"});
+    const s3=addStep({title:`${spot.unsure?4:3} · Cleanup Planner`,kind:"Planner",state:"doing",skill:"cleanup-planner"});
     const plan=await buy("cleanup-planner",{items},s3);
     s3.html=plan.steps.length?`${plan.steps.length} steps · about ${plan.minutes} min · ${plan.recyclablePercent}% recyclable`:esc(plan.message);
     renderTimeline();
+    run={...run,running:false,done:true,items:items.reduce((a,i)=>a+i.count,0),kinds:items.length,plan};
     addStep({title:"Done",state:"ok",html:"Coco paid each skill on its own. Nobody tapped Confirm."});
     showResult(spot,items,plan);
   }catch(e){
     const m=e instanceof Stop?e.message:"Something went wrong: "+(e&&e.message||e);
+    run={...run,running:false,error:m};
     addStep({title:"Coco stopped",state:"err",html:esc(m)});
     $("msg").textContent=m;
     if(!(e instanceof Stop))console.error(e);
@@ -355,7 +381,7 @@ $("start").onclick=patrol;
 
 /* "Skip, use the AI's guess": a button inside the Human Reviewer step. */
 let skipAsked=false;
-$("timeline").addEventListener("click",e=>{if(e.target.closest("[data-skip]")){skipAsked=true;e.target.closest("[data-skip]").disabled=true}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-skip]");if(b){skipAsked=true;document.querySelectorAll("[data-skip]").forEach(x=>x.disabled=true)}});
 async function askHuman(spotId,step){
   let r=await api("/api/skills/human-reviewer",{method:"POST",body:JSON.stringify({spotId})});
   if(r.status!==202){step.state="warn";return null}
@@ -366,7 +392,8 @@ async function askHuman(spotId,step){
   const wait=chip(step,countHtml(seconds),"doing");
   step.html=`Anyone can answer at <a class="tap" href="review.html" target="_blank" rel="noopener">${esc(location.host)}/review</a>. <button type="button" data-skip class="skip">Skip, use the AI’s guess</button>`;renderTimeline();
   // Update only the number (no redraw), so a tap on Skip is never lost
-  const tick=setInterval(()=>{const n=Math.max(0,Math.ceil((until-Date.now())/1000));wait.html=countHtml(n);const el=document.querySelector("#timeline [data-count]");if(el)el.textContent=n},1000);
+  step.waiting=true;step.count=seconds;renderTimeline();
+  const tick=setInterval(()=>{const n=Math.max(0,Math.ceil((until-Date.now())/1000));wait.html=countHtml(n);step.count=n;document.querySelectorAll("[data-count]").forEach(el=>el.textContent=n)},1000);
   try{
     for(;;){
       for(let i=0;i<8&&!skipAsked;i++)await sleep(250); // ask every 2 s, react to Skip at once
@@ -383,8 +410,84 @@ async function askHuman(spotId,step){
       }
       wait.state="warn";wait.html="no answer";step.html="";renderTimeline();return{seconds};
     }
-  }finally{clearInterval(tick)}
+  }finally{clearInterval(tick);step.waiting=false}
 }
+
+/* ---------- patrol progress sheet (phones) ---------- */
+let run={},announced={},lastFocus=null;
+const ROWS=[
+  {skill:"litter-spotter",name:"Litter Spotter",kind:"AI",does:"finds the litter"},
+  {skill:"human-reviewer",name:"Human Reviewer",kind:"Person",does:"answers when the AI isn’t sure"},
+  {skill:"cleanup-planner",name:"Cleanup Planner",kind:"Planner",does:"makes the cleanup plan"}
+];
+function rowState(r){
+  const st=steps.find(x=>x.skill===r.skill);
+  const ended=!run.running;
+  if(!st){
+    if(r.skill==="human-reviewer"&&steps.some(x=>x.skill==="cleanup-planner"))return{k:"skipped",t:"skipped · the AI was sure"};
+    return ended?{k:"skipped",t:run.error?"not run":"skipped"}:{k:"waiting",t:"waiting"};
+  }
+  if(st.paid)return{k:"paid",t:`paid ✓ ${usdc(st.paid.units)} USDC`,sig:st.paid.sig};
+  if(st.state==="err")return{k:"failed",t:"failed"};
+  if(st.outcome==="skipped")return{k:"skipped",t:"skipped · Coco used the AI’s guess, paid nothing"};
+  if(st.outcome==="noanswer")return{k:"skipped",t:"skipped · nobody answered, paid nothing"};
+  if(st.waiting)return{k:"working",t:"waiting for a person",count:st.count};
+  return{k:"working",t:"working…"};
+}
+function renderSheet(){
+  if($("sheet").hidden)return;
+  const rows=ROWS.map(r=>({...r,s:rowState(r)}));
+  $("sheetSteps").innerHTML=rows.map(r=>`<li class="srow ${r.s.k}">
+    <span class="sdot" aria-hidden="true"></span>
+    <span class="sbody"><span class="sname"><b>${r.name}</b> <span class="kind">${r.kind}</span></span><span class="small muted sdoes">${r.does}</span>
+      <span class="sstate">${esc(r.s.t)}${r.s.count!=null?` · <span data-count>${r.s.count}</span> s`:""}${r.s.sig?` · <a class="tap" href="${txUrl(r.s.sig)}" target="_blank" rel="noopener">View on Explorer</a>`:""}</span>
+      ${r.s.count!=null?`<button type="button" data-skip class="skip">Skip, use the AI’s guess</button>`:""}
+    </span></li>`).join("");
+  // announce each change once (not every countdown second)
+  rows.forEach(r=>{const key=r.s.k+r.s.t;if(announced[r.skill]!==key){announced[r.skill]=key;if(r.s.k!=="waiting")$("sheetLive").textContent=`${r.name}: ${r.s.t}`}});
+  const paid=steps.filter(x=>x.paid);const total=paid.reduce((a,x)=>a+x.paid.units,0);
+  if(run.done){
+    $("sheetEnd").innerHTML=`<div class="sdone"><h3>Patrol done</h3>
+      <p>${run.items?`Found <b>${run.items}</b> piece${run.items===1?"":"s"} of litter (${run.kinds} kind${run.kinds===1?"":"s"}).`:"No litter here: this stretch is clean."}</p>
+      <p>Paid <b>${usdc(total)} USDC</b> to ${paid.length} skill${paid.length===1?"":"s"}. Nobody tapped Confirm.</p>
+      <button type="button" class="go big" id="sheetResults">See full results</button></div>`;
+    $("sheetResults").onclick=()=>closeSheet({toResults:true});
+    if(announced.end!=="done"){announced.end="done";$("sheetLive").textContent=`Patrol done. Paid ${usdc(total)} USDC to ${paid.length} skills. Nobody tapped Confirm.`;showEnd("sheetResults")}
+  }else if(run.error){
+    $("sheetEnd").innerHTML=`<div class="serr" role="alert"><h3>Coco stopped</h3><p>${esc(run.error)}</p>
+      <div class="row"><button type="button" class="go" id="sheetRetry">Try again</button><button type="button" id="sheetClose2">Close</button></div></div>`;
+    $("sheetRetry").onclick=()=>{if(!busy)patrol()};$("sheetClose2").onclick=()=>closeSheet();
+    if(announced.end!=="err"+run.error){announced.end="err"+run.error;showEnd("sheetRetry")}
+  }else $("sheetEnd").innerHTML="";
+}
+/* At the end (or on an error) bring the summary into view and put focus on its main button. */
+function showEnd(btnId){
+  $("sheetEnd").scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"end"});
+  const b=$(btnId);if(b)b.focus({preventScroll:true});
+}
+function openSheet(){
+  const sh=$("sheet");
+  if(sh.hidden){lastFocus=document.activeElement;sh.hidden=false;document.querySelector(".wrap").inert=true;document.body.classList.add("noScroll")}
+  $("sheetImg").src=run.photo||photo||"";
+  renderSheet();
+  $("sheetTitle").focus();
+}
+function closeSheet({toResults}={}){
+  const sh=$("sheet");if(sh.hidden)return;
+  sh.hidden=true;document.querySelector(".wrap").inert=false;document.body.classList.remove("noScroll");
+  if(toResults){const box=$("result").hidden?$("timeline"):$("result");box.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"start"});box.setAttribute("tabindex","-1");box.focus({preventScroll:true})}
+  else if(lastFocus&&lastFocus.focus)lastFocus.focus();
+}
+$("sheetClose").onclick=()=>closeSheet();
+$("sheet").addEventListener("click",e=>{if(e.target===$("sheet"))closeSheet()}); // tap outside the panel
+$("sheet").addEventListener("keydown",e=>{
+  if(e.key==="Escape"){e.preventDefault();closeSheet();return}
+  if(e.key!=="Tab")return; // keep focus inside the sheet
+  const f=[...$("sheetPanel").querySelectorAll("button:not([disabled]),a[href],[tabindex='-1']")].filter(x=>x.offsetParent!==null);
+  if(!f.length)return;const first=f[0],last=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+});
 
 function showResult(spot,items,plan){
   const nice=t=>t.replace(/_/g," ");

@@ -98,7 +98,8 @@ Sample photos in `assets/samples/`:
 | File | Source |
 |---|---|
 | `beach-3.jpg` | [Pexels](https://www.pexels.com/photo/12598157/), free to use under the Pexels license |
-| `beach-1.jpg`, `beach-2.jpg` | Source to be confirmed |
+| `beach-2.jpg` | Pexels, free to use under the Pexels license (exact photo link to be added) |
+| `beach-1.jpg` | Source to be confirmed |
 
 ## License
 

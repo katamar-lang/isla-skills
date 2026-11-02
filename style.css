@@ -115,3 +115,35 @@ input.amt{width:90px}
 @media (max-width:1000px){.grid.main,.grid.two{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow{justify-self:center}}
 @media (max-width:640px){.skills{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
 @media (prefers-reduced-motion:reduce){.bot.work .eye{animation:none}}
+
+/* patrol progress sheet (phones) */
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.noScroll{overflow:hidden}
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(8,18,14,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheetPanel{background:var(--panel);color:var(--ink);width:100%;max-width:640px;height:94vh;height:94dvh;overflow:auto;border-radius:20px 20px 0 0;
+  padding:18px 16px max(20px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:sheetUp .28s ease-out}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheetHead{display:flex;gap:12px;align-items:center}
+.sheetHead img{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none}
+.sheetHeadText{flex:1;min-width:0}
+.sheetHead h2{font-size:20px;outline:none}
+.sheetX{min-width:44px;font-size:18px;padding:0}
+.sheetSteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.srow{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px}
+.sbody{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.sdoes{display:block}
+.sname{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sstate{font-family:var(--mono);font-size:12.5px}
+.sdot{width:14px;height:14px;border-radius:50%;flex:none;margin-top:4px;background:var(--chip);border:2px solid var(--line)}
+.srow.working .sdot{background:var(--accent);border-color:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.srow.working .sstate{color:var(--accent)}
+.srow.paid .sdot{background:var(--ok);border-color:var(--ok)}
+.srow.paid .sstate{color:var(--ok)}
+.srow.skipped .sstate,.srow.waiting .sstate{color:var(--muted)}
+.srow.failed .sdot{background:var(--err);border-color:var(--err)}
+.srow.failed .sstate{color:var(--err)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.sdone,.serr{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.sdone p,.serr p{margin:0}
+.serr h3{color:var(--err)}
+@media (prefers-reduced-motion:reduce){.sheetPanel{animation:none}.srow.working .sdot{animation:none}}

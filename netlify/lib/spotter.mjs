@@ -14,6 +14,12 @@ export const SpotSchema = z.object({
     label: z.string().describe("Two to four words, e.g. 'blue bottle cap'"),
     count: z.number().int(),
     where: z.string().describe("Rough position in the photo, e.g. 'bottom left', 'near the water'"),
+    box: z.object({
+      x: z.number().describe("Left edge, as a fraction of the image width (0 to 1)"),
+      y: z.number().describe("Top edge, as a fraction of the image height (0 to 1)"),
+      w: z.number().describe("Width, as a fraction of the image width"),
+      h: z.number().describe("Height, as a fraction of the image height")
+    }).nullable().describe("Rough box around the item (around all of them if count > 1); null if you can't place it"),
     confidence: z.enum(["high", "medium", "low"])
   })),
   unsure: z.object({
@@ -26,7 +32,7 @@ export const SpotSchema = z.object({
 });
 
 const SYSTEM = `You are the eyes of Coco, a beach-cleaning robot in Florianópolis, Brazil.
-Look at the photo and list the litter a cleanup robot should pick up: type, a short label, how many, rough position, and your confidence.
+Look at the photo and list the litter a cleanup robot should pick up: type, a short label, how many, rough position, a rough box around it, and your confidence.
 Natural things (shells, seaweed, wood, stones, footprints, animals) are not litter.
 If you are genuinely unsure whether something is litter or natural (for example a white plastic fragment vs a shell), mark it with low confidence and fill "unsure" with one short question a person can answer with one tap. Otherwise set "unsure" to null.
 If the photo is not a beach or shore, set isBeach to false and still list any litter you see.
@@ -58,6 +64,18 @@ export async function spotLitter(base64, mediaType) {
   return clean(out);
 }
 
+/* A box inside the photo (fractions 0–1), at least a little visible; anything else is dropped. */
+export function cleanBox(b) {
+  if (!b || typeof b !== "object") return null;
+  const n = v => (typeof v === "number" && isFinite(v) ? v : NaN);
+  let x = n(b.x), y = n(b.y), w = n(b.w), h = n(b.h);
+  if ([x, y, w, h].some(isNaN)) return null;
+  x = Math.min(Math.max(x, 0), 0.98); y = Math.min(Math.max(y, 0), 0.98);
+  w = Math.min(Math.max(w, 0.02), 1 - x); h = Math.min(Math.max(h, 0.02), 1 - y);
+  const r = v => Math.round(v * 1000) / 1000;
+  return { x: r(x), y: r(y), w: r(w), h: r(h) };
+}
+
 /* Keep the result tidy and safe to show: limits, and an "unsure" only when it points to a real item. */
 export function clean(out) {
   const items = (out.items || []).slice(0, 20).map(i => ({
@@ -65,6 +83,7 @@ export function clean(out) {
     label: String(i.label || i.type).slice(0, 40),
     count: Math.max(1, Math.min(200, Math.round(Number(i.count) || 1))),
     where: String(i.where || "").slice(0, 40),
+    box: cleanBox(i.box),
     confidence: ["high", "medium", "low"].includes(i.confidence) ? i.confidence : "medium"
   }));
   let unsure = null;

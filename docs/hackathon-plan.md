@@ -59,7 +59,7 @@ Remove the "Community vote" panel, close-round button, "See all votes on Solana"
 - When Litter Spotter has low confidence ("litter or a shell?"), Coco calls **Human Reviewer**.
 - A simple page (e.g. `/review`): the reviewer connects any Solana wallet, sees pending photos with the AI's question, answers with one tap.
 - When the reviewer answers, Coco pays that review with x402 (`payTo` = reviewer's wallet). The final result uses the human answer.
-- If nobody answers in about 60 seconds, Coco continues with the AI answer and pays nothing.
+- If nobody answers in about 20 seconds (changed from 60 on Nov 2, plus a "Skip, use the AI's guess" button), Coco continues with the AI answer and pays nothing.
 - Store pending reviews simply (e.g. Netlify Blobs) and explain the choice to the owner.
 - Copy on the page: "Earn by helping robots, from anywhere." Talk about work and fair pay, never charity.
 - Long-term vision (roadmap only, not for this hackathon): people with limited mobility operate robots remotely and get paid per task, like the DAWN Avatar Robot Café in Tokyo.
@@ -97,7 +97,7 @@ Use the Solana Wallet Standard so any compatible wallet appears in a picker. Kee
 - [x] x402 skill store working end to end on devnet · real test Nov 1: Ultravioleta, PayAI and plan B (`local`) all settled real payments (Cleanup Planner + Human Reviewer). Still to check on the live site: Litter Spotter with the real Claude key, and timing inside Netlify
 - [x] Beach Patrol: Litter Spotter + Cleanup Planner, chained payments, camera/upload/desk-robot camera
 - [x] Community vote removed
-- [x] Ask a human: /review page, paid reviews, 60 s fallback
+- [x] Ask a human: /review page, paid reviews, 20 s fallback + Skip button
 - [x] Untrue claims fixed (no 5% claim, "Coco's wallet" vs skill wallets, numbers from Solana)
 - [x] Wallet Standard
 - [x] Public usage counters from Solana (`/api/stats`)

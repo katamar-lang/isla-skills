@@ -22,13 +22,15 @@ Pitch: "Robots are learning new skills through software, but there's no way to p
 - **The owner has no money for paid APIs.** Litter Spotter needs an AI key: ask the hackathon organizers for credits, or use a free tier (decision pending).
 - Everything runs on **Solana devnet** (test USDC).
 
+Both pages are full HTML documents: `<!doctype html>`, `<html lang="en">`, a `<head>` with the viewport meta (`width=device-width, initial-scale=1, viewport-fit=cover`; without it phones lay the page out at 980 px) and Open Graph / Twitter tags (`og:image` = absolute URL of `assets/cover.png`, `twitter:card` = `summary_large_image`). Links and buttons are at least 44 px tall (`a.tap`). Checked at 375 and 320 px with Playwright (iPhone emulation, `isMobile`).
+
 ## How the code is organised
 
 No build step for the pages. The server is a set of handlers (Node, ES modules, Web `Request` → `Response`) in `netlify/functions/`. On **Vercel**, `api/router.mjs` is the only function: `vercel.json` rewrites `/api/<path>` to `/api/router?p=<path>` and the router calls the same handlers with the original URL and the visitor IP (`x-forwarded-for`). On Netlify they run as Netlify Functions directly.
 
 | File | What it is |
 |---|---|
-| `index.html` | Beach Patrol: photo (upload, phone camera, "desk robot" webcam, optional samples in `assets/samples/beach-1..3.jpg`), patrol timeline, "Who pays whom", live usage numbers, top up Coco |
+| `index.html` | Beach Patrol: photo (upload button, phone camera, "desk robot" webcam, sample photos listed in the `SAMPLES` array → `assets/samples/`, shown as `<button>`s with alt text; add a file there AND to the array, never a guessed name, or it 404s), patrol timeline (Human Reviewer: live countdown + "Skip, use the AI's guess"), "Who pays whom", live usage numbers (keeps the last numbers and says when they are stale), top up Coco. The footer says who settles payments, from `/api/coco` → `facilitator` |
 | `review.html` | "Earn by helping robots, from anywhere." Reviewer connects any Solana wallet, sees pending photos + the AI's question, answers with one tap, sees payments. Served at `/review` via `_redirects` |
 | `wallet.js` | Shared wallet code (`window.IslaWallet`) on top of the **official Solana wallet adapter** ([anza-xyz/wallet-adapter](https://github.com/anza-xyz/wallet-adapter)) without React: `getWallets()` from `@wallet-standard/app` finds every Wallet Standard wallet, `StandardWalletAdapter` connects/signs/sends (`sendTransaction` picks `solana:devnet` from the connection's endpoint), and the **Mobile Wallet Adapter** (`registerMwa`) adds "Wallet app on this phone" on Android Chrome. Legacy injected providers are a fallback; a broken wallet is skipped. Also: picker, "Open in Solflare / Phantom / Backpack" links (iPhone), USDC instructions, `sendTx` (confirms by polling), plain-language errors |
 | `wallet-adapter.min.js` | The official adapter pieces bundled with esbuild from `wallet-adapter/` (pinned versions, see its README). `@solana/web3.js` is not bundled: it points to `window.solanaWeb3`. Load order: `web3.min.js` → `wallet-adapter.min.js` → `wallet.js` |
@@ -37,7 +39,7 @@ No build step for the pages. The server is a set of handlers (Node, ES modules, 
 | `netlify/functions/skills.mjs` | The store: `GET /api/skills/:id` (info), `POST /api/skills/:id` → **402** with x402 v1 requirements; with `X-PAYMENT` → facilitator `/verify` (in parallel with the work) → `/settle` → result + `X-PAYMENT-RESPONSE`. If the work fails, the payment is never settled |
 | `netlify/functions/coco.mjs` | Coco's wallet service: `GET /api/coco` (address, balance, budget, photo limits, readiness), `POST /api/coco/pay` (signs one payment if it passes every rule, below) |
 | `netlify/functions/reviews.mjs` | `GET /api/reviews[?wallet=]`, `GET /api/reviews/:id`, `GET /api/reviews/:id/image`, `POST /api/reviews/:id/answer` |
-| `netlify/functions/stats.mjs` | `GET /api/stats`: public numbers read from Solana (every USDC transfer out of Coco's USDC account), cached 30 s, cache cleared after each settled payment |
+| `netlify/functions/stats.mjs` | `GET /api/stats`: public numbers read from Solana (every USDC transfer out of Coco's USDC account). Always answers 200 fast: totals saved in `stats/state`, refreshed at most once a minute or after a payment (`stats/dirty`), reading only signatures newer than the last seen (`until`), 4 s per Solana call, 7 s per refresh; on failure the last known numbers with `stale: true` |
 | `netlify/lib/*.mjs` | `config` (prices, limits, skill wallets), `store` (Netlify Blobs), `solana` (keys, USDC instructions, sponsor), `x402` (requirements, remote + local facilitator), `spotter` (Claude), `planner` |
 | `api/router.mjs`, `vercel.json`, `.vercelignore` | Vercel: one function (maxDuration 30 s), static files copied to `public/` by `buildCommand`, `cleanUrls` serves `/review` |
 | `scripts/new-keys.mjs` | The owner runs it **on her computer** to create `COCO_SECRET_KEY` and `SPONSOR_SECRET_KEY`. Never run it where the output is logged or shown in chat |
@@ -46,7 +48,7 @@ No build step for the pages. The server is a set of handlers (Node, ES modules, 
 
 1. Page shrinks the photo (≤1024 px JPEG) and `POST /api/skills/litter-spotter {image}` → 402 (or 429 if a photo limit is reached, 503 if no AI key).
 2. Page sends the 402 requirements to `POST /api/coco/pay` → base64 `X-PAYMENT`. Page retries the skill with it → 200 result.
-3. If `result.unsure`: `POST /api/skills/human-reviewer {spotId}` → 202 `{reviewId}`; the page polls with `{reviewId}` every 2 s: 202 waiting, **402 once a person answered** (payTo = that person) → pay like any skill, **410 after 60 s** → Coco uses the AI guess and pays nothing. A late answer gets 410 too.
+3. If `result.unsure`: `POST /api/skills/human-reviewer {spotId}` → 202 `{reviewId}`; the page polls with `{reviewId}` every 2 s: 202 waiting, **402 once a person answered** (payTo = that person) → pay like any skill, **410 after 20 s** (`REVIEW_SECONDS`) → Coco uses the AI guess and pays nothing. A late answer gets 410 too. The page's "Skip, use the AI's guess" sends `{reviewId, cancel:true}` → the review closes (410 `skipped`); if someone already answered, they are still paid.
 4. `POST /api/skills/cleanup-planner {items}` (with the human correction applied) → 402 → pay → plan.
 
 ### Coco's wallet rules (`/api/coco/pay`)
@@ -59,7 +61,7 @@ Known skill · `resource` = this store's `/api/skills/<id>` · exact/solana-devn
 
 ### Storage keys (Upstash Redis on Vercel when `KV_REST_API_URL`/`KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set; otherwise Netlify Blobs store `isla-skills`)
 
-Redis is used through its REST API with plain `fetch` (no package); counters use `INCRBY` (atomic) and expire after 2 days; spots expire after 1 day, reviews after 7. Keys: `coco/spent/<day>`, `coco/pays/<day>/<visitor>`, `photos/<day>`, `photos/<day>/<visitor>`, `spot/<id>` (photo + AI result, only when unsure), `review/<id>`, `pending/<id>`, `reviewer/<wallet>` (last 50 review ids), `paid/<hash>` (saved results for retries), `stats/cache`. On Netlify Blobs counters are read-modify-write (fine for a demo; the money in Coco's wallet is the hard limit). Photos are limited to ~650 KB (900k base64 chars) because the free Redis plan takes up to 1 MB per request.
+Redis is used through its REST API with plain `fetch` (no package); counters use `INCRBY` (atomic) and expire after 2 days; spots expire after 1 day, reviews after 7. Keys: `coco/spent/<day>`, `coco/pays/<day>/<visitor>`, `photos/<day>`, `photos/<day>/<visitor>`, `spot/<id>` (photo + AI result, only when unsure), `review/<id>`, `pending/<id>`, `reviewer/<wallet>` (last 50 review ids), `paid/<hash>` (saved results for retries), `stats/state`, `stats/dirty`. On Netlify Blobs counters are read-modify-write (fine for a demo; the money in Coco's wallet is the hard limit). Photos are limited to ~650 KB (900k base64 chars) because the free Redis plan takes up to 1 MB per request.
 
 ## Setup (owner)
 

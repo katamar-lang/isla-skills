@@ -49,7 +49,7 @@ async function sell(req, reqs, work, afterSettle) {
   const paidHeader = paymentResponseHeader(s);
   await setJSON(replayKey, { body, header: paidHeader }, TTL.day).catch(() => {});
   if (afterSettle) await afterSettle(s.transaction);
-  await del("stats/cache").catch(() => {}); // the public numbers include this payment right away
+  await setJSON("stats/dirty", 1).catch(() => {}); // the public numbers include this payment on the next read
   return json(200, body, { "X-PAYMENT-RESPONSE": paidHeader, "Server-Timing": `verify_and_work;dur=${t1 - t0}, settle;dur=${Date.now() - t1}` });
 }
 
@@ -99,6 +99,11 @@ async function humanReviewer(req, body, reqsFor) {
   // Step 2: Coco checks back. Once a person has answered, the answer costs a payment to that person.
   const r = await reviewState(String(body.reviewId || "").slice(0, 40));
   if (!r) return err(404, "Unknown review.", "no_review");
+  // The robot (or the person watching it) chose not to wait: close the review, nobody is paid.
+  if (body.cancel && r.status === "pending") {
+    r.status = "expired"; r.skipped = true; await setJSON(`review/${r.id}`, r, TTL.week); await del(`pending/${r.id}`);
+    return json(410, { status: "skipped", reviewId: r.id });
+  }
   if (r.status === "pending") return json(202, { status: "waiting", reviewId: r.id, secondsLeft: Math.max(0, Math.ceil((r.expiresAt - Date.now()) / 1000)) });
   if (r.status === "expired") return json(410, { status: "expired", reviewId: r.id, error: "Nobody answered in time." });
   if (r.status === "paid") return err(409, "This review was already paid.", "already_paid", { transaction: r.transaction });

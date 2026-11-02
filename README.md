@@ -21,7 +21,7 @@ photo ─▶ Litter Spotter (AI)      402 ─▶ Coco pays 0.01 USDC  ─▶ lit
 ```
 
 - **Litter Spotter** uses Claude (Haiku) with vision to list the litter in the photo with a confidence for each item.
-- **Human Reviewer:** when the AI isn't sure ("litter or a shell?"), Coco asks a person. Anyone can answer from `/review` with one tap and gets paid in USDC. If nobody answers in 60 seconds, Coco goes on with the AI's guess and pays nothing.
+- **Human Reviewer:** when the AI isn't sure ("litter or a shell?"), Coco asks a person. Anyone can answer from `/review` with one tap and gets paid in USDC. If nobody answers in 20 seconds (or the person watching taps "Skip, use the AI's guess"), Coco goes on with the AI's guess and pays nothing.
 - **Cleanup Planner** turns the list into a plan: order, recycling bins (Brazil's colours), time and % recyclable.
 
 The page shows every step as **402 → paid → result**, with a Solana Explorer link for each payment, and live numbers read from Solana: photos analyzed, paid skill calls, USDC paid to skill makers, people paid for reviews.

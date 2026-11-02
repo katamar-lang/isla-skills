@@ -238,6 +238,8 @@ const chip=(step,html,st="ok")=>{(step.chips=step.chips||[]).push({html,state:st
 
 /* ---------- Coco buys one skill: ask → 402 → Coco's wallet signs → pay → result ---------- */
 class Stop extends Error{}
+/* Phones pause hidden pages: wait until the page is visible again before retrying. */
+const waitVisible=()=>document.visibilityState!=="hidden"?Promise.resolve():new Promise(r=>document.addEventListener("visibilitychange",function f(){if(document.visibilityState!=="hidden"){document.removeEventListener("visibilitychange",f);r()}}));
 async function buy(skillId,body,step,extra={}){
   let r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body)});
   if(r.status!==402){
@@ -249,7 +251,16 @@ async function buy(skillId,body,step,extra={}){
   const p=await api("/api/coco/pay",{method:"POST",body:JSON.stringify({skill:skillId,requirements:req,...extra})});
   if(!p.ok){step.state="err";chip(step,"not paid","err");throw new Stop(p.json.error||"Coco's wallet couldn't pay.")}
   const c=chip(step,"paying…","doing");
-  r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body),headers:{"X-PAYMENT":p.json.payment}});
+  // If the connection drops (a phone puts the page to sleep while you answer in a wallet app),
+  // send the same payment again: the store gives back the saved result and never charges twice.
+  for(let tries=0;;tries++){
+    try{
+      r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body),headers:{"X-PAYMENT":p.json.payment}});
+      if(r.ok||tries===0||tries>=4||(r.status!==402&&r.status<500))break;
+    }catch(e){if(tries>=4)throw new Stop("Lost the connection to the skill store. Check your internet and try again.")}
+    c.html=`reconnecting… (${tries+1})`;renderTimeline();
+    await waitVisible();await sleep(1500*(tries+1));
+  }
   if(!r.ok){c.state="err";c.html="not paid";step.state="err";renderTimeline();throw new Stop((r.json.error||`The skill answered ${r.status}.`)+(r.json.charged===false?" Coco wasn't charged.":""))}
   let settled={};try{settled=JSON.parse(atob(r.headers.get("X-PAYMENT-RESPONSE")||""))}catch(e){}
   const sig=settled.transaction||r.json.payment&&r.json.payment.transaction;
@@ -310,7 +321,8 @@ async function askHuman(spotId,step){
   step.html=`Anyone can answer at <a href="review.html" target="_blank" rel="noopener">${esc(location.host)}/review</a>.`;renderTimeline();
   for(;;){
     await sleep(2000);
-    r=await api("/api/skills/human-reviewer",{method:"POST",body:JSON.stringify({reviewId:id})});
+    try{r=await api("/api/skills/human-reviewer",{method:"POST",body:JSON.stringify({reviewId:id})})}
+    catch(e){await waitVisible();continue} // connection dropped while the page slept: just ask again
     if(r.status===202){wait.html=`waiting for a person… ${Math.max(0,Math.ceil((until-Date.now())/1000))} s`;renderTimeline();continue}
     if(r.status===410||r.status>=500||r.status===404){wait.state="warn";wait.html="no answer";renderTimeline();return null}
     if(r.status===402){

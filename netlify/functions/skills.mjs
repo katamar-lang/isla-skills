@@ -2,7 +2,7 @@
      POST /api/skills/:id                 -> 402 Payment Required + x402 paymentRequirements
      POST /api/skills/:id  + X-PAYMENT    -> verify, do the work, settle, return the result
    Skills: litter-spotter (AI), human-reviewer (a person), cleanup-planner (rules). */
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { SKILLS, json, preflight, today, visitorId, PHOTOS_PER_DAY, PHOTOS_PER_VISITOR, REVIEW_SECONDS } from "../lib/config.mjs";
 import { requirements, paymentRequired, decodePayment, verify, settle, facilitatorFeePayer, paymentResponseHeader } from "../lib/x402.mjs";
 import { getJSON, setJSON, bump, count, del, TTL } from "../lib/store.mjs";
@@ -17,6 +17,16 @@ export function skillInfo(id) {
     payTo: s.wallet ? s.wallet() : "the person who answers" };
 }
 
+/* Same payment sent again (the robot lost the answer, e.g. a phone put the page to sleep):
+   the store gives back the saved result. It is never charged twice. */
+const replayKeyFor = header => "paid/" + createHash("sha256").update(header).digest("hex").slice(0, 40);
+async function replay(req) {
+  const header = req.headers.get("x-payment");
+  if (!header) return null;
+  const saved = await getJSON(replayKeyFor(header)).catch(() => null);
+  return saved ? json(200, saved.body, { "X-PAYMENT-RESPONSE": saved.header, "X-Replay": "1" }) : null;
+}
+
 /* Sell one result: no payment -> 402; payment -> verify (in parallel with the work) -> settle -> deliver.
    If the work fails, the payment is never settled, so Coco isn't charged. */
 async function sell(req, reqs, work, afterSettle) {
@@ -24,6 +34,7 @@ async function sell(req, reqs, work, afterSettle) {
   if (!header) return paymentRequired(reqs, "X-PAYMENT header is required");
   const payment = decodePayment(header);
   if (!payment) return paymentRequired(reqs, "X-PAYMENT must be an x402 v1 exact payment on solana-devnet");
+  const replayKey = replayKeyFor(header);
   const t0 = Date.now();
   const [v, w] = await Promise.all([
     verify(payment, reqs).catch(e => ({ isValid: false, invalidReason: "facilitator didn't answer: " + String(e.message || e).slice(0, 80) })),
@@ -34,10 +45,12 @@ async function sell(req, reqs, work, afterSettle) {
   const t1 = Date.now();
   const s = await settle(payment, reqs).catch(e => ({ success: false, errorReason: "facilitator didn't answer: " + String(e.message || e).slice(0, 80) }));
   if (!s.success) return paymentRequired(reqs, "Facilitator /settle: " + s.errorReason);
+  const body = { result: w.r, payment: { transaction: s.transaction, amount: reqs.maxAmountRequired, payTo: reqs.payTo, asset: reqs.asset } };
+  const paidHeader = paymentResponseHeader(s);
+  await setJSON(replayKey, { body, header: paidHeader }, TTL.day).catch(() => {});
   if (afterSettle) await afterSettle(s.transaction);
   await del("stats/cache").catch(() => {}); // the public numbers include this payment right away
-  return json(200, { result: w.r, payment: { transaction: s.transaction, amount: reqs.maxAmountRequired, payTo: reqs.payTo, asset: reqs.asset } },
-    { "X-PAYMENT-RESPONSE": paymentResponseHeader(s), "Server-Timing": `verify_and_work;dur=${t1 - t0}, settle;dur=${Date.now() - t1}` });
+  return json(200, body, { "X-PAYMENT-RESPONSE": paidHeader, "Server-Timing": `verify_and_work;dur=${t1 - t0}, settle;dur=${Date.now() - t1}` });
 }
 
 const err = (status, error, code, extra = {}) => json(status, { error, code, ...extra });
@@ -105,6 +118,8 @@ export default async (req, context) => {
   if (Number(req.headers.get("content-length") || 0) > 2_000_000) return err(413, "Request too large.", "too_large");
   let body; try { body = await req.json(); } catch (e) { return err(400, "Send a JSON body.", "bad_json"); }
   if (!body || typeof body !== "object") return err(400, "Send a JSON body.", "bad_json");
+  const again = await replay(req); // before limits and "already paid" checks
+  if (again) return again;
 
   let feePayer;
   const reqsFor = async (payTo, description) => {

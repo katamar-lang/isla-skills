@@ -38,7 +38,7 @@ Coco ──POST again + X-PAYMENT ───────────────�
 
 - **Coco's wallet** is one shared devnet wallet held by the server, with a **daily budget** (1 USDC). When it's used up, Coco stops and says so. It only pays a skill's own wallet, at the listed price, and never itself.
 - **Every skill has its own wallet**, so the USDC goes straight to whoever made the skill (or to the reviewer who answered).
-- **Visitors need no wallet** to watch Coco work. Anyone can top Coco up from their Solana wallet (Solflare, Phantom, Backpack…).
+- **Visitors need no wallet** to watch Coco work. Anyone can top Coco up from their Solana wallet (Solflare, Phantom, Backpack…), connected through the official Solana wallet adapter; on Android phones it also finds the wallet app installed on the phone.
 - The AI costs real money, so each visitor gets 5 photos a day and Coco analyzes up to 100 a day in total.
 - The facilitator pays the network fee. Default: [Ultravioleta DAO](https://facilitator.ultravioletadao.xyz); configurable, with a built-in fallback that verifies and submits payments on the server.
 
@@ -73,7 +73,7 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 |---|---|
 | `index.html` | Beach Patrol: photo, timeline, who pays whom, live numbers, top up |
 | `review.html` | Human Reviewer page: "Earn by helping robots, from anywhere." |
-| `wallet.js` | Any Solana wallet through the Wallet Standard, plus phone links |
+| `wallet.js`, `wallet-adapter.min.js` | Any Solana wallet through the official [Solana wallet adapter](https://github.com/anza-xyz/wallet-adapter) (Wallet Standard + Mobile Wallet Adapter on Android), plus phone links |
 | `netlify/functions/` | `skills` (the x402 store), `coco` (Coco's wallet), `reviews`, `stats` |
 | `api/router.mjs`, `vercel.json` | Runs the same handlers on Vercel |
 | `netlify/lib/` | Shared server code: x402, Solana, Claude, planner, storage |

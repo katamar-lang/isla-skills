@@ -30,7 +30,8 @@ No build step for the pages. The server is a set of handlers (Node, ES modules, 
 |---|---|
 | `index.html` | Beach Patrol: photo (upload, phone camera, "desk robot" webcam, optional samples in `assets/samples/beach-1..3.jpg`), patrol timeline, "Who pays whom", live usage numbers, top up Coco |
 | `review.html` | "Earn by helping robots, from anywhere." Reviewer connects any Solana wallet, sees pending photos + the AI's question, answers with one tap, sees payments. Served at `/review` via `_redirects` |
-| `wallet.js` | Shared wallet code (`window.IslaWallet`): **Wallet Standard** discovery (`wallet-standard:app-ready` / `register-wallet`) + legacy providers as fallback, picker, "Open in Solflare / Phantom / Backpack" phone links, USDC instructions, `sendTx`, error messages |
+| `wallet.js` | Shared wallet code (`window.IslaWallet`) on top of the **official Solana wallet adapter** ([anza-xyz/wallet-adapter](https://github.com/anza-xyz/wallet-adapter)) without React: `getWallets()` from `@wallet-standard/app` finds every Wallet Standard wallet, `StandardWalletAdapter` connects/signs/sends (`sendTransaction` picks `solana:devnet` from the connection's endpoint), and the **Mobile Wallet Adapter** (`registerMwa`) adds "Wallet app on this phone" on Android Chrome. Legacy injected providers are a fallback; a broken wallet is skipped. Also: picker, "Open in Solflare / Phantom / Backpack" links (iPhone), USDC instructions, `sendTx` (confirms by polling), plain-language errors |
+| `wallet-adapter.min.js` | The official adapter pieces bundled with esbuild from `wallet-adapter/` (pinned versions, see its README). `@solana/web3.js` is not bundled: it points to `window.solanaWeb3`. Load order: `web3.min.js` → `wallet-adapter.min.js` → `wallet.js` |
 | `style.css` | Shared styles (light/dark tokens) |
 | `web3.min.js` | `@solana/web3.js@1.95.3` IIFE build **with a Buffer polyfill prepended**. Don't replace with the plain CDN build |
 | `netlify/functions/skills.mjs` | The store: `GET /api/skills/:id` (info), `POST /api/skills/:id` → **402** with x402 v1 requirements; with `X-PAYMENT` → facilitator `/verify` (in parallel with the work) → `/settle` → result + `X-PAYMENT-RESPONSE`. If the work fails, the payment is never settled |
@@ -97,6 +98,7 @@ Never print or commit tokens or keys.
 - Server: import the functions in Node with a fake ledger (`setConnection`), in-memory Blobs (`setStore(memoryStore())`), a fake Claude (`setClaudeClient`) and a fake facilitator on `globalThis.fetch`; test both `X402_FACILITATOR_URL=https://…` and `local`. Decode the transactions with `@solana/spl-token`.
 - End to end: Playwright with a static server and `context.route("**/api/**")` calling the functions; a fake Wallet Standard wallet via `addInitScript`; two contexts (Coco page + reviewer page on a phone viewport). Screenshots at 1280 and 390 px.
 - Bundling: `npx @netlify/zip-it-and-ship-it netlify/functions <out>` must list the 4 functions with their routes.
+- Wallets: Playwright page loading `web3.min.js` + `wallet-adapter.min.js` + `wallet.js` with fake Wallet Standard wallets (one sign-only like Solflare, one sign-and-send, one broken, one EVM-only; early and late registration), a stub connection with `rpcEndpoint` devnet, and device emulation (Pixel 7 → Mobile Wallet Adapter appears; iPhone → it doesn't). Fake wallets need `supportedTransactionVersions` and account `features`, like real ones.
 - Cloud sessions: the environment now allows `api.devnet.solana.com`, `facilitator.ultravioletadao.xyz` and `facilitator.payai.network`. Node needs `NODE_USE_ENV_PROXY=1` and `new Connection(url, { fetch: globalThis.fetch })` to go through the proxy (only here, not on Netlify). The devnet RPC airdrop is closed: fund test wallets from faucet.circle.com / faucet.solana.com. There is no Anthropic key here, so Claude is only tested on the live site.
 
 ## Known issues and open items
@@ -106,7 +108,7 @@ Never print or commit tokens or keys.
 - The public devnet RPC sometimes answers 429 (rate limit). If that shows up on the live site, set `SOLANA_RPC_URL` to a free devnet RPC (e.g. Helius).
 - Function time limit: Netlify synchronous functions have a time limit (check the plan; Vercel fallback: `maxDuration` 30 s). The paid Litter Spotter call runs verify ∥ Claude, then settle; measure on the live site (`Server-Timing` header).
 - The Vercel fallback (`vercel.json`, Web-handler exports in `api/router.mjs`) is untested on Vercel itself.
-- Wallet Standard, Solflare and Backpack were tested only with simulated wallets. Phantom was confirmed with real payments in the earlier version.
+- Wallets go through the official adapter since Nov 2, 2026; tested only with simulated wallets (and Android/iPhone emulation). Phantom was confirmed with real payments in an earlier version. The Mobile Wallet Adapter needs a real Android phone with a wallet app to confirm.
 - Coco is shared: anyone can make it spend, up to the daily budget.
 - X hides posts with `.netlify.app` links; a custom domain (e.g. islaskills.xyz) is on the list.
 

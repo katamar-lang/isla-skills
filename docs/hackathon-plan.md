@@ -103,5 +103,5 @@ Use the Solana Wallet Standard so any compatible wallet appears in a picker. Kee
 - [x] Public usage counters from Solana (`/api/stats`)
 - [x] README rewritten for the new focus
 - [ ] Real beach photos from Florianópolis in `assets/samples/beach-1.jpg` … `beach-3.jpg` (so judges can try without a camera)
-- [ ] Netlify environment variables complete (see CLAUDE.md → Setup): Coco and sponsor keys are set; skill wallets and AI key pending
+- [x] Netlify environment variables complete; first live patrol on Nov 2 (Claude + a real reviewer + Cleanup Planner, paid on devnet)
 - [ ] AI key for Litter Spotter without paying (organizers' credits or a free tier)

@@ -353,7 +353,8 @@ $("connect").onclick=async()=>{
 $("topUp").onclick=async()=>{
   const amt=Number($("topAmt").value);
   if(!(amt>0&&amt<=100)){$("topMsg").textContent="Choose between 0.01 and 100 USDC.";return}
-  if(!state||!state.address){$("topMsg").textContent="Coco's wallet isn't set up on the server yet.";return}
+  if(!state){$("topMsg").textContent="The skill store server isn't answering. Try again in a minute.";return}
+  if(!state.address){$("topMsg").textContent="Coco's wallet isn't set up on the server yet"+(state.problems&&state.problems.length?": "+state.problems[0]+".":".");return}
   if(!IW.owner){$("connect").click();if(!IW.owner)return}
   const units=Math.round(amt*1e6),me=IW.owner;
   try{

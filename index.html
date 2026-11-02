@@ -248,7 +248,9 @@ $("camBtn").onclick=async()=>{
 };
 /* Sample photos in assets/samples/: list only files that exist (no 404s). */
 const SAMPLES=[
-  {file:"beach-1.jpg",alt:"Beach with a plastic bag, a plastic bottle and other litter on the sand"}
+  {file:"beach-1.jpg",alt:"Beach with a plastic bag, a plastic bottle and other litter on the sand"},
+  {file:"beach-2.jpg",alt:"Shore with a plastic bottle, plastic plates, a cup and plastic bags on the sand"},
+  {file:"beach-3.jpg",alt:"Wide sandy beach with a single metal bucket half buried in the sand"}
 ];
 SAMPLES.forEach(x=>{
   const b=document.createElement("button");b.type="button";b.className="thumbBtn";b.setAttribute("aria-label","Use this sample photo: "+x.alt);

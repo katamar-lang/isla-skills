@@ -91,6 +91,15 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 - [ ] People with limited mobility operating robots remotely and getting paid per task
 - [ ] Solana program for the skill registry; mainnet
 
+## Photo credits
+
+Sample photos in `assets/samples/`:
+
+| File | Source |
+|---|---|
+| `beach-3.jpg` | [Pexels](https://www.pexels.com/photo/12598157/), free to use under the Pexels license |
+| `beach-1.jpg`, `beach-2.jpg` | Source to be confirmed |
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

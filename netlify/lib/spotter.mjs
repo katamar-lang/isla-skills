@@ -6,7 +6,7 @@ import * as z from "zod/v4";
 
 export const MODEL = "claude-haiku-5-5";
 /* Where the photo was taken: the beach, a room of the IslandDAO V5 villa (for the villa simulation), or somewhere else. */
-export const PLACES = ["beach", "pool_terrace", "dining", "kitchen", "living", "reception", "tv_room", "billiards", "garden", "other"];
+export const PLACES = ["beach", "entrance", "billiards", "tv_room", "living", "small_living", "kitchen", "dining", "pool_terrace", "kiosk", "bbq", "garden", "other"];
 const VILLA = PLACES.filter(p => p !== "beach" && p !== "other");
 const TYPES = ["plastic_bottle", "plastic_bag", "cup_or_straw", "food_wrapper", "cigarette_butt", "can", "glass", "fishing_gear_or_rope", "styrofoam", "paper_or_cardboard", "other"];
 export const SpotSchema = z.object({
@@ -42,14 +42,17 @@ Natural things (shells, seaweed, wood, stones, footprints, animals) are not litt
 If you are genuinely unsure whether something is litter or natural (for example a white plastic fragment vs a shell), mark it with low confidence and fill "unsure" with one short question a person can answer with one tap. Otherwise set "unsure" to null.
 If the photo is not a beach or shore, set isBeach to false and still list any litter you see.
 Coco also works inside the IslandDAO V5 villa. If the photo was taken there, set "place" to the room it shows:
-- pool_terrace: outdoor pool deck, blue sun loungers, wooden gazebo, black BBQ grill, beige tiles, white columns, round wicker sofa, palm trees
-- dining: round white dining table with wooden chairs, glass walls looking at the pool, white round columns
+- entrance: the front entrance, white front door with a digital lock, marble floor with a compass-rose inlay, small bathroom
+- billiards: red billiards table, cue rack on the wall, round mirrors, long wooden coworking table with laptops, shelf with fitness gear
+- tv_room: black leather sectional sofa, glossy black coffee table, black-and-white geometric rug, black TV stand, tall dark vases, sheer white curtains, glass doors to the garden
+- living: the big living room: cream sofas, blue abstract paintings, big TV, spiral staircase, wooden console with a tablet and a printer, a few marble steps
+- small_living: the small living room next to the stairs and the kitchen: white sofas and ottomans, TV on a white wall, glass doors
 - kitchen: white kitchen, long island with wooden high stools, built-in grill, steel fridge, cream cabinets
-- living: bright living room, cream L-shaped sofa, blue abstract paintings, TV on a white wall, wooden coffee table, glass doors to the lawn
-- reception: entrance hall, marble floor with a compass-rose inlay, white door with a digital lock, spiral staircase, wooden console with a tablet and printer, steps
-- tv_room: black leather sofa, glossy black coffee table, black-and-white geometric rug, black TV stand, tall dark vases, sheer white curtains, glass doors to the garden
-- billiards: red billiards table, cue rack, round mirrors, long wooden coworking table with laptops, shelf with fitness gear
-- garden: lawn and tall hedges, outdoor wooden work table under a white tent
+- dining: round white dining table with wooden chairs, glass walls looking at the pool, white round columns
+- pool_terrace: outdoor pool deck: swimming pool, blue sun loungers, beige tiles, round wicker sofa, white columns of the house
+- kiosk: wooden kiosk (gazebo) next to the pool, with a table and chairs under a wooden roof
+- bbq: small raised terrace up the steps behind the kiosk, with a black BBQ grill
+- garden: lawn and tall hedges along the side of the house, outdoor wooden work table under a white tent, a jacuzzi
 Use "beach" for a beach or shore and "other" for anywhere else. Inside the villa, things in use (cables plugged in, bags, towels, laptops) are not litter; discarded cups, bottles, cans, wrappers and paper are.
 Inside the villa, look carefully at the whole photo, including the floor, tables, the pool edge, corners and the background. Report small or distant objects that could be litter (bottles, cans, cups, straws, wrappers, napkins, paper, plastic bags), even if they are tiny, partly hidden or blurry: give them low confidence instead of leaving them out. When you are not sure whether such an object is litter or still in use, put it in "items" with low confidence and fill "unsure" with a one-tap question for a person (e.g. "Is the cup on the pool edge litter or still in use?", options "Litter" / "Still in use"). Only answer with no items when the room really looks clean.
 Never describe people. Keep labels short.`;

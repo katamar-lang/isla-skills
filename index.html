@@ -26,19 +26,62 @@
 </head>
 <body>
 
-<!-- ONE SCREEN: the idea, and the patrol coming alive (every change comes from a real server answer) -->
-<main id="hero" class="hero" aria-labelledby="heroTitle">
+<!-- THE STORE FIRST: the product is the skill store; Coco (below) is the first robot using it -->
+<div class="store" id="store" role="region" aria-labelledby="storeTitle">
   <div class="heroTop">
     <img src="favicon.png" alt="" class="heroLogo" width="28" height="28">
     <span class="heroBrand">Isla Skills</span>
     <span class="pill" id="modePill"><span class="dot" id="modeDot"></span><span id="modeTxt">devnet</span></span>
   </div>
+  <div class="storeHead">
+    <h1 id="storeTitle">The skill store for robots.</h1>
+    <p class="storeLede">Robots call skills as APIs and pay for every use in USDC on Solana, on their own. Skills come from AI and from people, and each payment goes straight to whoever made the skill.</p>
+  </div>
+  <div class="shelf" role="list" aria-label="Skills in the store">
+    <article class="skillCard" role="listitem" data-skill="litter-spotter">
+      <div class="scTop"><span class="scIcon c1"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span><span class="scState" id="sc-litter-spotter">Available</span></div>
+      <h3>Litter Spotter <span class="scKind">AI</span></h3>
+      <p>Looks at a photo, finds the litter and says which room of the villa it shows.</p>
+      <div class="scPrice"><b>0.010</b> <small>USDC / use</small></div>
+      <div class="scMeta"><span><b id="u-litter-spotter">—</b> uses</span><span><b id="e-litter-spotter">—</b> USDC earned</span></div>
+    </article>
+    <article class="skillCard" role="listitem" data-skill="human-reviewer">
+      <div class="scTop"><span class="scIcon c2"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span class="scState" id="sc-human-reviewer">Available</span></div>
+      <h3>Human Reviewer <span class="scKind">Person</span></h3>
+      <p>A real person answers when the AI isn't sure, from anywhere, and gets paid for it.</p>
+      <div class="scPrice"><b>0.005</b> <small>USDC / review</small></div>
+      <div class="scMeta"><span><b id="u-human-reviewer">—</b> uses</span><span><b id="e-human-reviewer">—</b> USDC earned</span></div>
+    </article>
+    <article class="skillCard" role="listitem" data-skill="cleanup-planner">
+      <div class="scTop"><span class="scIcon c3"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h11M9 12h11M9 19h11"/><path d="M4 5h.01M4 12h.01M4 19h.01"/></svg></span><span class="scState" id="sc-cleanup-planner">Available</span></div>
+      <h3>Cleanup Planner <span class="scKind">Planner</span></h3>
+      <p>Turns what was found into a cleanup plan: order and the right recycling bin.</p>
+      <div class="scPrice"><b>0.002</b> <small>USDC / use</small></div>
+      <div class="scMeta"><span><b id="u-cleanup-planner">—</b> uses</span><span><b id="e-cleanup-planner">—</b> USDC earned</span></div>
+    </article>
+    <article class="skillCard soon" role="listitem">
+      <div class="scTop"><span class="scIcon c0"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="scState">Coming soon</span></div>
+      <h3>Publish your skill</h3>
+      <p>Set a price per use and a payout wallet. Robots pay you every time they use it.</p>
+      <div class="scPrice"><small>Open to developers soon</small></div>
+    </article>
+  </div>
+  <div class="robotStrip glass">
+    <img src="favicon.png" alt="" width="44" height="44">
+    <div><b>Robot #1 · Coco</b><span>The first robot of IslandDAO, simulated for now. It is using these skills in the villa: take a photo and watch it pay.</span></div>
+    <button type="button" class="go" id="storeGo">Watch Coco use them</button>
+  </div>
+</div>
+
+<!-- ONE SCREEN: the idea, and the patrol coming alive (every change comes from a real server answer) -->
+<main id="hero" class="hero" aria-labelledby="heroTitle">
   <div class="heroGrid">
     <div class="heroLeft">
       <div class="heroText">
         <div id="heroIntro" class="swap">
-          <h1 id="heroTitle">The skill store for robots.</h1>
-          <p class="heroLede">Robots call skills as APIs and pay per use in USDC on Solana. Snap a room of the villa and watch Coco, a simulated robot, find the litter and pay each skill to clean it up.</p>
+          <p class="robotTag"><span class="rtDot" aria-hidden="true"></span>Robot #1 · Coco · simulated</p>
+          <h2 id="heroTitle" class="heroH">Coco is using these skills now.</h2>
+          <p class="heroLede">Coco is a simulated cleaning robot in the IslandDAO V5 villa. Take a photo of any room: Coco finds the litter and pays each skill it uses, on its own.</p>
         </div>
         <div id="heroLive" class="swap" hidden>
           <p class="eyebrow">Clean Sweep · Live</p>
@@ -217,6 +260,8 @@ async function loadStats(){
   $("sStale").textContent=stats.stale?`Solana devnet is slow right now: these are the numbers from ${mins<1?"less than a minute":mins===1?"1 minute":mins+" minutes"} ago.`:"";
   $("sPhotos").textContent=stats.photos;$("sCalls").textContent=stats.paidCalls;
   $("sPaid").textContent=usdc(stats.paidUnits);$("sPeople").textContent=stats.reviewers;
+  // uses and earnings on each store card, read from Solana
+  if(stats.perSkill)for(const [id,v] of Object.entries(stats.perSkill)){const u=$("u-"+id),e=$("e-"+id);if(u)u.textContent=v.calls;if(e)e.textContent=usdc3(v.units)}
 }
 
 /* Coco's wallet: one line with the real balance the server reads from Solana */
@@ -425,9 +470,13 @@ const SKILLS_ORDER=["litter-spotter","human-reviewer","cleanup-planner"];
 const RING_R={"litter-spotter":56,"human-reviewer":47,"cleanup-planner":38};
 /* One short line under the title for errors and setup problems (the full story is in the Patrol log). */
 function note(t,cls){const el=$("heroNote");el.textContent=t||"";el.hidden=!t;el.className="heroNote"+(cls?" "+cls:"")}
-function setState(skill,text,cls){const el=$("st-"+skill);if(!el)return;el.textContent=text;el.className="lstate"+(cls?" "+cls:"")}
+function setState(skill,text,cls){const el=$("st-"+skill);if(el){el.textContent=text;el.className="lstate"+(cls?" "+cls:"")}
+  // the same state on the skill's card in the store, so the store and the robot read as one
+  const card=document.querySelector('.skillCard[data-skill="'+skill+'"]'),sc=$("sc-"+skill);if(!card)return;
+  card.classList.toggle("using",cls==="working");card.classList.toggle("paid",cls==="paid");
+  if(sc)sc.textContent=cls==="working"?"In use by Coco":cls==="paid"?"Paid by Coco":cls==="skipped"?"Not needed":"Available"}
 function setRing(skill,full){const c=$("ring-"+skill),L=2*Math.PI*RING_R[skill];c.style.strokeDasharray=L;c.style.strokeDashoffset=full?0:L;c.classList.toggle("full",!!full)}
-function toTop(){if(scrollY>8)scrollTo({top:0,behavior:reducedMotion()?"auto":"smooth"})}
+function toTop(){const y=Math.max(0,$("hero").getBoundingClientRect().top+scrollY-8);if(Math.abs(scrollY-y)>8)scrollTo({top:y,behavior:reducedMotion()?"auto":"smooth"})} // the robot's screen, below the store
 function heroPhase(t){
   if(!$("heroLive").hidden&&$("heroPhase").textContent===t)return;
   $("heroIntro").hidden=true;$("heroLive").hidden=false;
@@ -450,6 +499,7 @@ function setBtn(mode){
   b.textContent=L[mode];b.disabled=mode==="working";b.classList.toggle("go",mode!=="waiting");b.classList.toggle("ghost",mode==="waiting");
   again.hidden=mode!=="done";$("heroCap").hidden=!(mode==="idle");
 }
+$("storeGo").onclick=()=>{toTop();setTimeout(()=>$("heroBtn").focus({preventScroll:true}),reducedMotion()?0:450)};
 $("heroBtn").onclick=()=>{
   if(btnMode==="idle")$("file").click(); // a new photo starts the patrol
   else if(btnMode==="error")patrol(); // try the same photo again

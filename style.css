@@ -271,3 +271,39 @@ body.noScroll{overflow:hidden}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
+
+/* ===== the store first: skill cards; Coco (the hero below) is the first robot using them ===== */
+.store{max-width:1200px;margin:-24px auto 22px;padding-top:max(10px,env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:16px}
+.store + .hero{margin-top:0}
+.storeHead h1{font-size:clamp(32px,8.4vw,58px);line-height:1.02;margin:10px 0 10px;letter-spacing:-.03em;text-wrap:balance}
+.storeLede{margin:0;color:var(--muted);font-size:15px;line-height:1.45;max-width:62ch;text-wrap:pretty}
+.shelf{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.skillCard{background:var(--panel);border:1px solid var(--glassLine);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;transition:box-shadow .35s ease,transform .35s ease}
+.skillCard h3{margin:2px 0 0;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.skillCard p{margin:0;font-size:13px;color:var(--muted);line-height:1.42;flex:1}
+.scTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.scIcon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;flex-shrink:0}
+.scIcon.c1{background:var(--gold)}.scIcon.c2{background:var(--green)}.scIcon.c3{background:var(--violet)}.scIcon.c0{background:rgba(20,27,45,.08);color:var(--muted)}
+.scKind{font:500 11px var(--mono);color:var(--muted);background:var(--chip);border-radius:6px;padding:2px 7px;letter-spacing:0}
+.scState{font:500 11px var(--mono);border-radius:999px;padding:4px 9px;background:var(--chip);color:var(--muted);white-space:nowrap}
+.scPrice{font:600 16px var(--mono);font-variant-numeric:tabular-nums}.scPrice small{font-weight:400;font-size:12px;color:var(--muted)}
+.scMeta{display:flex;justify-content:space-between;gap:8px;font:12px var(--mono);color:var(--muted);border-top:1px solid var(--line);padding-top:8px;font-variant-numeric:tabular-nums}
+.scMeta b{color:var(--ink);font-weight:600}
+.skillCard.using{box-shadow:0 0 0 2px var(--gold),0 14px 32px rgba(232,162,31,.28);transform:translateY(-2px)}
+.skillCard.using .scState{background:#FCF0D6;color:var(--goldInk)}
+.skillCard.paid .scState{background:#E3F6EE;color:var(--ok)}
+.skillCard.soon{border-style:dashed;border-color:rgba(20,27,45,.22);background:rgba(255,255,255,.32)}
+.robotStrip{display:flex;align-items:center;gap:12px;border-radius:18px;padding:12px 14px;flex-wrap:wrap}
+.robotStrip img{width:44px;height:44px;border-radius:12px;flex-shrink:0}
+.robotStrip div{flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px}
+.robotStrip b{font-size:15px}.robotStrip span{font-size:13px;color:var(--muted);line-height:1.4}
+.robotTag{margin:0;font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.rtDot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.hero .heroH{display:block;font-family:var(--display);font-weight:700;font-size:clamp(24px,6.6vw,44px);line-height:1.05;letter-spacing:-.02em;margin:2px 0 6px}
+@media (max-width:899px){
+  .shelf{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin-left:calc(-1 * max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)));padding:2px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));scroll-padding-left:max(16px,env(safe-area-inset-left,0px));scrollbar-width:none}
+  .shelf::-webkit-scrollbar{display:none}
+  .skillCard{flex:0 0 76%;scroll-snap-align:start}
+  .robotStrip .go{width:100%}
+}
+@media (prefers-reduced-motion:reduce){.skillCard{transition:none}.skillCard.using{transform:none}}

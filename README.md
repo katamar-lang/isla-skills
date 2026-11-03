@@ -10,9 +10,9 @@ Robots are learning new skills through software, but there's no way to pay for a
 
 **Live demo:** https://isla-skills-dao-2b40fb.netlify.app · **Earn by reviewing:** https://isla-skills-dao-2b40fb.netlify.app/review
 
-## Beach Patrol
+## Clean Sweep
 
-Coco is a beach robot in Florianópolis (simulated: a phone or laptop camera plays its eyes). One photo starts a chain of paid skills, each from a different service with its own wallet:
+Coco is a cleaning robot for the IslandDAO V5 villa in Florianópolis (simulated: your phone camera plays its eyes). Take a photo of a room and it starts a chain of paid skills, each from a different service with its own wallet:
 
 ```
 photo ─▶ Litter Spotter (AI)      402 ─▶ Coco pays 0.01 USDC  ─▶ litter list
@@ -20,9 +20,10 @@ photo ─▶ Litter Spotter (AI)      402 ─▶ Coco pays 0.01 USDC  ─▶ lit
       ─▶ Cleanup Planner           402 ─▶ Coco pays 0.002 USDC ─▶ cleanup plan
 ```
 
-- **Litter Spotter** uses Claude (Haiku) with vision to list the litter in the photo with a confidence for each item.
-- **Human Reviewer:** when the AI isn't sure ("litter or a shell?"), Coco asks a person. Anyone can answer from `/review` with one tap and gets paid in USDC. If nobody answers in 20 seconds (or the person watching taps "Skip, use the AI's guess"), Coco goes on with the AI's guess and pays nothing.
+- **Litter Spotter** uses Claude (Haiku) with vision to say which room of the villa the photo shows and list the litter in it, with a confidence for each item.
+- **Human Reviewer:** when the AI isn't sure ("is this cup still in use?"), Coco asks a person. Anyone can answer from `/review` with one tap and gets paid in USDC. If nobody answers in 20 seconds (or the person watching taps "Skip, use the AI's guess"), Coco goes on with the AI's guess and pays nothing.
 - **Cleanup Planner** turns the list into a plan: order, recycling bins (Brazil's colours), time and % recyclable.
+- When the photo is a villa room, a pop-up shows Coco walking there through real photos of the villa, picking the item up and taking it to the right bin (purely visual; the payments above are the real part).
 
 The top of the page fits on one phone screen: Coco's real wallet balance going down, the photo being scanned, boxes on the litter, and three rings that fill as each skill is actually paid. The Patrol log at the bottom opens every step as **402 → paid → result**, with a Solana Explorer link for each payment, and live numbers read from Solana: photos analyzed, paid skill calls, USDC paid to skill makers, people paid for reviews.
 
@@ -71,7 +72,8 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 
 | File | What it is |
 |---|---|
-| `index.html` | Beach Patrol: one-screen patrol (Coco's wallet, photo, rings, skills), Patrol log sheet, who pays whom, live numbers, top up |
+| `index.html` | Clean Sweep: one-screen patrol (take a photo, Coco's wallet, rings, skills), Patrol log, live numbers, top up |
+| `villa-sim.js`, `assets/villa/` | The villa pop-up: Coco walks to the room the photo shows |
 | `review.html` | Human Reviewer page: "Earn by helping robots, from anywhere." |
 | `wallet.js`, `wallet-adapter.min.js` | Any Solana wallet through the official [Solana wallet adapter](https://github.com/anza-xyz/wallet-adapter) (Wallet Standard + Mobile Wallet Adapter on Android), plus phone links |
 | `netlify/functions/` | `skills` (the x402 store), `coco` (Coco's wallet), `reviews`, `stats` |
@@ -93,13 +95,7 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 
 ## Photo credits
 
-Sample photos in `assets/samples/`:
-
-| File | Source |
-|---|---|
-| `beach-3.jpg` | [Pexels](https://www.pexels.com/photo/12598157/), free to use under the Pexels license |
-| `beach-2.jpg` | Pexels, free to use under the Pexels license (exact photo link to be added) |
-| `beach-1.jpg` | Source to be confirmed |
+Room photos in `assets/villa/` come from the villa's public rental listing (Temporada Livre). They are used only to show where Coco goes in this demo.
 
 ## License
 

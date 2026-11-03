@@ -20,7 +20,7 @@ export const SKILLS = {
   "litter-spotter": {
     name: "Litter Spotter", kind: "AI", price: 10_000, // 0.01 USDC
     wallet: () => process.env.LITTER_SPOTTER_WALLET || "LdnKQSmuMQTYUuHESv8c1Vshd3KSxXs5j7BHsS96WJZ",
-    does: "Looks at a beach photo and lists the litter it sees, with a confidence for each item."
+    does: "Looks at a photo, says which room of the villa it shows, and lists the litter it sees with a confidence for each item."
   },
   "human-reviewer": {
     name: "Human Reviewer", kind: "Person", price: 5_000, // 0.005 USDC

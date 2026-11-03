@@ -46,12 +46,7 @@
         </div>
         <p class="heroNote" id="heroNote" role="status" hidden></p>
       </div>
-      <div class="walletCard glass" id="walletCard">
-        <span class="wLbl">Coco’s wallet <span class="srOnly">balance</span></span>
-        <span class="wBal"><b id="wBal">—</b><small>USDC</small></span>
-        <div class="wMeter" id="wMeter" role="progressbar" aria-label="Daily budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
-        <span class="wSpent" id="wSpent">— spent today · daily budget —</span>
-      </div>
+      <p class="walletLine" id="walletCard"><span class="wDot" aria-hidden="true"></span>Coco’s wallet <b id="wBal">—</b> USDC</p>
       <div class="heroCta">
         <button type="button" class="go big" id="heroBtn">Run Beach Patrol</button>
         <button type="button" class="big ghost" id="heroAgain" hidden>Run it again</button>
@@ -100,13 +95,6 @@
     <div class="row small" id="samples" hidden><span class="muted">Or try a beach:</span></div>
     <p class="small muted" id="limits" style="margin:0">The AI costs real money, so each visitor gets 5 photos a day and Coco analyzes up to 100 a day in total.</p>
     <p class="small" id="msg" aria-live="polite" style="margin:0"></p>
-  </section>
-
-  <!-- WHO GETS PAID: what each skill does and whose wallet it pays (prices and Coco's wallet are on the first screen) -->
-  <section>
-    <h2>Who gets paid <small>100% of each price goes to the skill’s maker</small></h2>
-    <div class="skills" id="skillCards"></div>
-    <p class="small muted" style="margin:0">Each skill is an independent service with its own wallet. It asks Coco for payment with HTTP <span class="mono">402</span>, Coco’s wallet signs on its own, and the USDC goes straight to that wallet. Coco never pays itself.</p>
   </section>
 
   <!-- NUMBERS -->
@@ -226,7 +214,6 @@ function renderStatus(){
   $("facTxt").textContent=/^local/.test(f)?", settled by this site’s own server (plan B: it checks each payment and sends it to Solana)."
     :/ultravioletadao/.test(f)?", settled through the Ultravioleta DAO x402 facilitator, which also pays the network fee."
     :f?`, settled through the x402 facilitator at ${f.replace(/^https?:\/\//,"")}.`:".";
-  renderSkills();
 }
 let stats=null;
 async function loadStats(){
@@ -238,21 +225,9 @@ async function loadStats(){
   $("sStale").textContent=stats.stale?`Solana devnet is slow right now: these are the numbers from ${mins<1?"less than a minute":mins===1?"1 minute":mins+" minutes"} ago.`:"";
   $("sPhotos").textContent=stats.photos;$("sCalls").textContent=stats.paidCalls;
   $("sPaid").textContent=usdc(stats.paidUnits);$("sPeople").textContent=stats.reviewers;
-  renderSkills();
-}
-function renderSkills(){
-  if(!state)return;
-  $("skillCards").innerHTML=state.skills.map(s=>{
-    const st=stats&&stats.perSkill[s.id];
-    return `<div class="wcard">
-      <span class="lbl">${esc(s.name)} <span class="kind">${esc(s.kind)}</span></span>
-      <span class="small muted">${esc(s.does)}</span>
-      <span class="small">Paid to ${ADDR.test(s.payTo)?addrLink(s.payTo):"<i>the person who answers</i>"}</span>
-      <span class="small muted mono">${st?`${st.calls} paid · ${usdc(st.units)} USDC earned`:""}</span>
-    </div>`}).join("");
 }
 
-/* Coco's wallet card: the real balance read by the server from Solana, and today's budget */
+/* Coco's wallet: one line with the real balance the server reads from Solana */
 let shownBal=null;
 function renderWalletCard(){
   const bal=state&&state.usdcUnits!=null?Number(state.usdcUnits):null;
@@ -260,11 +235,6 @@ function renderWalletCard(){
   else if(shownBal==null||reducedMotion()){shownBal=bal;$("wBal").textContent=usdc3(bal)}
   else if(bal!==shownBal){const from=shownBal,t0=performance.now();shownBal=bal;
     const step=now=>{const k=Math.min(1,(now-t0)/800);$("wBal").textContent=usdc3(from+(bal-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
-  const b=state&&state.budget;
-  if(!b){$("wSpent").textContent="— spent today";return}
-  const pct=Math.min(100,b.spentUnits/b.limitUnits*100);
-  $("wMeter").firstElementChild.style.width=pct+"%";$("wMeter").classList.toggle("full",pct>=100);$("wMeter").setAttribute("aria-valuenow",Math.round(pct));
-  $("wSpent").textContent=`${usdc3(b.spentUnits)} spent today · daily budget ${usdc3(b.limitUnits)}`;
 }
 
 /* ---------- photo: upload, camera, samples ---------- */

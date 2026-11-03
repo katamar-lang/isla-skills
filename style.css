@@ -125,7 +125,7 @@ body{padding-bottom:calc(var(--bar) + 24px + env(safe-area-inset-bottom,0px))}
 .heroGrid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"text" "wallet" "stage" "legend" "cta";grid-template-rows:auto auto minmax(0,1fr) auto auto;gap:8px}
 .heroLeft,.heroRight{display:contents}
 .heroText{grid-area:text;min-height:86px}
-.walletCard{grid-area:wallet}
+.walletLine{grid-area:wallet}
 .heroStage{grid-area:stage;display:flex;gap:10px;min-height:0}
 .legend{grid-area:legend}
 .heroCta{grid-area:cta;display:flex;flex-direction:column;gap:6px;min-height:96px}
@@ -141,15 +141,10 @@ body{padding-bottom:calc(var(--bar) + 24px + env(safe-area-inset-bottom,0px))}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* Coco's wallet: the real balance */
-.walletCard{border-radius:14px;padding:9px 12px;display:grid;grid-template-columns:1fr auto;column-gap:10px;row-gap:5px;align-items:baseline}
-.wLbl{font-size:12.5px;color:var(--muted);font-weight:500}
-.wBal{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;text-align:right;white-space:nowrap}
-.wBal small{font-size:11.5px;color:var(--muted);font-weight:500;margin-left:4px}
-.wMeter{grid-column:1 / -1;height:6px;border-radius:3px;background:rgba(20,27,45,.1);overflow:hidden}
-.wMeter i{display:block;height:100%;width:0;background:var(--gold);border-radius:3px;transition:width .8s ease-out}
-.wMeter.full i{background:var(--err)}
-.wSpent{grid-column:1 / -1;font-family:var(--mono);font-size:11.5px;color:var(--muted2)}
+/* Coco's wallet: one simple line with the real balance */
+.walletLine{margin:0;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.walletLine b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:var(--ink)}
+.wDot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none}
 
 /* photo */
 .photoWrap{flex:1;min-width:0;min-height:96px;max-height:340px;display:flex;justify-content:center;align-items:center;border-radius:14px;overflow:hidden}
@@ -192,6 +187,7 @@ body{padding-bottom:calc(var(--bar) + 24px + env(safe-area-inset-bottom,0px))}
 .lprice{font-family:var(--mono);font-size:11.5px;color:var(--muted2);font-weight:400;margin-left:4px}
 .lstate{font-family:var(--mono);font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;justify-content:flex-end;text-align:right;white-space:nowrap}
 .lstate.working{color:var(--goldInk)}
+.legend li:has(.lstate.working) .lprice{display:none} /* room for "asking a person · 18 s" */
 .lstate.working::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 1.2s ease-in-out infinite;flex:none}
 .lstate.paid{color:var(--ok);font-weight:600}
 .lstate.skipped{color:var(--muted2)}
@@ -257,7 +253,7 @@ body.noScroll{overflow:hidden}
   .hero h1{font-size:clamp(40px,4.6vw,60px)}
   .heroLede{font-size:17px}
   .heroPhase{font-size:clamp(30px,3.4vw,44px)}
-  .wBal{font-size:22px}
+  .walletLine{font-size:16px}.walletLine b{font-size:18px}
   .logBar{left:auto;right:24px;bottom:16px;width:380px;height:var(--bar);border-radius:16px;border-bottom:1px solid var(--glassLine);padding:6px 16px;grid-template-rows:1fr}
   .logBar .handle{display:none}
   .sheet{justify-content:flex-end;align-items:stretch}
@@ -268,7 +264,7 @@ body.noScroll{overflow:hidden}
   .sheetGrab{padding-top:16px;cursor:default}
 }
 @media (max-width:360px){.lname{font-size:13px}.heroLede{font-size:13px}.lstate{font-size:10.5px}}
-@media (max-height:620px) and (max-width:899px){.hero{gap:6px;min-height:440px}.heroGrid{gap:6px}.heroText{min-height:70px}.hero h1{font-size:22px;margin-bottom:3px}.heroLede{font-size:12.5px}.walletCard{padding:6px 10px;row-gap:3px}.wBal{font-size:16px}.legend li{min-height:29px}.heroCta{min-height:90px;gap:2px}.rings{width:88px}}
+@media (max-height:620px) and (max-width:899px){.hero{gap:6px;min-height:440px}.heroGrid{gap:6px}.heroText{min-height:70px}.hero h1{font-size:22px;margin-bottom:3px}.heroLede{font-size:12.5px}.legend li{min-height:29px}.heroCta{min-height:90px;gap:2px}.rings{width:88px}}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}

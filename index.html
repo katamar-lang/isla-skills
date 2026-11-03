@@ -283,8 +283,12 @@ async function loadStats(){
   try{const r=await api("/api/stats");if(r.ok&&r.json.ready)stats=r.json}catch(e){}
   if(!stats)return;
   const mins=stats.updatedAt?Math.round((Date.now()-stats.updatedAt)/60000):0;
-  $("sStale").hidden=!stats.stale;
-  $("sStale").textContent=stats.stale?`Solana devnet is slow right now: these are the numbers from ${mins<1?"less than a minute":mins===1?"1 minute":mins+" minutes"} ago.`:"";
+  // While the server is still reading older payments, say so: the numbers are what it has read so far
+  const left=stats.counting||0;
+  $("sStale").hidden=!(stats.stale||left);
+  $("sStale").textContent=left?`Still reading Coco’s payments on Solana (${left} transaction${left===1?"":"s"} to go): these are the numbers so far.`
+    :stats.stale?`Solana devnet is slow right now: these are the numbers from ${mins<1?"less than a minute":mins===1?"1 minute":mins+" minutes"} ago.`:"";
+  if(left){clearTimeout(loadStats.t);loadStats.t=setTimeout(loadStats,4000)} // keep reading until it has caught up
   $("sPhotos").textContent=stats.photos;$("sCalls").textContent=stats.paidCalls;
   $("sPaid").textContent=usdc(stats.paidUnits);$("sPeople").textContent=stats.reviewers;
   // uses and earnings on each store card, read from Solana
@@ -446,8 +450,9 @@ async function patrol(){
     addStep({title:"Done",state:"ok",html:"Coco paid each skill on its own. Nobody tapped Confirm."});
     showResult(spot,items,plan);
     heroDone();
-    // Villa photo: open the villa simulation (Coco goes to the room the photo shows and picks the item up)
-    if(window.VillaSim&&VillaSim.isVilla(spot.place)&&items.length){lastVilla={photo:run.photo,place:spot.place,reason:spot.placeReason,items};VillaSim.open(lastVilla)}
+    // Villa photo: always open the villa simulation. Coco goes to the room the photo shows,
+    // picks the litter up if there is any, or checks the room and says it is clean.
+    if(window.VillaSim&&VillaSim.isVilla(spot.place)){lastVilla={photo:run.photo,place:spot.place,reason:spot.placeReason,items};VillaSim.open(lastVilla)}
   }catch(e){
     const m=e instanceof Stop?e.message:"Something went wrong: "+(e&&e.message||e);
     run={...run,running:false,error:m};
@@ -624,7 +629,7 @@ function showResult(spot,items,plan){
     ${items.length?`<ul class="found">${items.map(i=>`<li><b>${i.count} × ${esc(i.label)}</b> <span class="muted">${esc(nice(i.type))}${i.where?" · "+esc(i.where):""}</span></li>`).join("")}</ul>`:'<p class="small muted">No litter here. This spot is clean.</p>'}
     ${plan.steps.length?`<h3>Cleanup plan</h3><ol class="plan">${plan.steps.map(s=>`<li>${esc(s.action)} <span class="bin">${esc(s.bin)}</span>${s.note?` <span class="muted small">${esc(s.note)}</span>`:""}</li>`).join("")}</ol>
     <p class="small muted">About ${plan.minutes} min · ${plan.recyclablePercent}% recyclable · bins follow Brazil's recycling colours.</p>`:""}
-    ${window.VillaSim&&VillaSim.isVilla(spot.place)&&items.length?'<p><button type="button" class="ghost" id="villaAgain">Watch Coco in the villa</button></p>':""}`;
+    ${window.VillaSim&&VillaSim.isVilla(spot.place)?'<p><button type="button" class="ghost" id="villaAgain">Watch Coco in the villa</button></p>':""}`;
   $("result").hidden=false;
   const va=$("villaAgain");if(va)va.onclick=()=>{if(lastVilla)VillaSim.open(lastVilla)};
 }

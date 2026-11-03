@@ -413,6 +413,7 @@ async function patrol(){
   busy=true;$("result").hidden=true;
   steps=[];run={running:true,photo};
   heroStart();
+  if(window.VillaSim&&VillaSim.preload)VillaSim.preload(); // load the 3D villa while Coco works
   addStep({title:"1 · Photo",state:"ok",html:`<img class="mini" src="${photo}" alt="">`});
   try{
     // Litter Spotter

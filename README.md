@@ -23,7 +23,7 @@ photo ─▶ Litter Spotter (AI)      402 ─▶ Coco pays 0.01 USDC  ─▶ lit
 - **Litter Spotter** uses Claude (Haiku) with vision to say which room of the villa the photo shows and list the litter in it, with a confidence for each item.
 - **Human Reviewer:** when the AI isn't sure ("is this cup still in use?"), Coco asks a person. Anyone can answer from `/review` with one tap and gets paid in USDC. If nobody answers in 20 seconds (or the person watching taps "Skip, use the AI's guess"), Coco goes on with the AI's guess and pays nothing.
 - **Cleanup Planner** turns the list into a plan: order, recycling bins (Brazil's colours), time and % recyclable.
-- When the photo is a villa room, a pop-up shows Coco walking there through real photos of the villa, picking the item up and taking it to the right bin (purely visual; the payments above are the real part).
+- When the photo is a villa room, a pop-up shows Coco driving there in a 3D model of the villa, picking the item up and taking it to the right bin, or saying the room is clean (purely visual; the payments above are the real part).
 
 The top of the page fits on one phone screen: Coco's real wallet balance going down, the photo being scanned, boxes on the litter, and three rings that fill as each skill is actually paid. The Patrol log at the bottom opens every step as **402 → paid → result**, with a Solana Explorer link for each payment, and live numbers read from Solana: photos analyzed, paid skill calls, USDC paid to skill makers, people paid for reviews.
 
@@ -73,7 +73,7 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 | File | What it is |
 |---|---|
 | `index.html` | Clean Sweep: one-screen patrol (take a photo, Coco's wallet, rings, skills), Patrol log, live numbers, top up |
-| `villa-sim.js`, `assets/villa/` | The villa pop-up: Coco walks to the room the photo shows |
+| `villa-sim.js`, `assets/three/` | The villa pop-up: a 3D model of the villa where Coco drives to the room the photo shows (three.js r128, MIT, served from this site) |
 | `review.html` | Human Reviewer page: "Earn by helping robots, from anywhere." |
 | `wallet.js`, `wallet-adapter.min.js` | Any Solana wallet through the official [Solana wallet adapter](https://github.com/anza-xyz/wallet-adapter) (Wallet Standard + Mobile Wallet Adapter on Android), plus phone links |
 | `netlify/functions/` | `skills` (the x402 store), `coco` (Coco's wallet), `reviews`, `stats` |
@@ -92,10 +92,6 @@ Coco needs devnet USDC (send it from the page with your wallet; get test USDC at
 - [ ] A low-cost open-source robot arm running a real skill
 - [ ] People with limited mobility operating robots remotely and getting paid per task
 - [ ] Solana program for the skill registry; mainnet
-
-## Photo credits
-
-Room photos in `assets/villa/` come from the villa's public rental listing (Temporada Livre). They are used only to show where Coco goes in this demo.
 
 ## License
 

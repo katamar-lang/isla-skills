@@ -53,8 +53,11 @@
   function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function () { no(new Error("load " + src)); }; document.head.appendChild(s); }); }
   function ensureThree() {
     if (window.THREE && THREE.OrbitControls) return Promise.resolve();
-    return threeP || (threeP = loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js")
-      .then(function () { return loadScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"); })
+    // Served by this site (assets/three/, same r128 files), so it doesn't depend on a CDN during the demo;
+    // the CDN is only a fallback.
+    function pair(a, b) { return loadScript(a).then(function () { return window.THREE && THREE.OrbitControls ? null : loadScript(b); }); }
+    return threeP || (threeP = pair("assets/three/three.min.js", "assets/three/OrbitControls.js")
+      .catch(function () { return pair("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"); })
       .catch(function (e) { threeP = null; throw e; }));
   }
 
@@ -66,7 +69,8 @@
     ".v3-head{grid-column:1 / -1;display:flex;align-items:center;gap:10px;padding:12px 16px}",
     ".v3-head b{font-size:16px}.v3-head span{display:block;font:500 11px 'Geist Mono',ui-monospace,monospace;color:#3A4458}",
     ".v3-x{margin-left:auto;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(20,27,45,.14);background:#fff;font:600 14px Geist,system-ui,sans-serif;color:#141B2D;cursor:pointer}",
-    ".v3-stage{position:relative;margin:0 0 12px 12px;border-radius:16px;overflow:hidden;min-height:420px;background:radial-gradient(42% 38% at 6% 4%,rgba(236,206,140,.5),transparent 70%),radial-gradient(40% 36% at 96% 8%,rgba(226,104,104,.3),transparent 70%),radial-gradient(46% 40% at 4% 96%,rgba(150,140,232,.45),transparent 70%),radial-gradient(44% 38% at 60% 92%,rgba(150,236,226,.5),transparent 70%),#EEF0FA}",
+    ".v3-stagebox{margin:0 0 12px 12px;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;background:radial-gradient(42% 38% at 6% 4%,rgba(236,206,140,.5),transparent 70%),radial-gradient(40% 36% at 96% 8%,rgba(226,104,104,.3),transparent 70%),radial-gradient(46% 40% at 4% 96%,rgba(150,140,232,.45),transparent 70%),radial-gradient(44% 38% at 60% 92%,rgba(150,236,226,.5),transparent 70%),#EEF0FA}",
+    ".v3-stage{position:relative;flex:1;min-height:420px}",
     ".v3-stage canvas{display:block;width:100%;height:100%;position:absolute;inset:0;outline:none}",
     ".v3-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 14px Geist,system-ui,sans-serif;color:#3A4458;text-align:center;padding:20px}",
     ".v3-lbls{position:absolute;inset:0;pointer-events:none;overflow:hidden}",
@@ -75,8 +79,8 @@
     ".v3-rl.hot span{background:#141B2D;color:#fff;border-color:#141B2D}.v3-rl.tgt span{background:#E8A21F;border-color:#E8A21F}",
     ".v3-status{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 24px);font:12.5px 'Geist Mono',ui-monospace,monospace;background:rgba(255,255,255,.9);border-radius:999px;padding:8px 13px;color:#3A4458}",
     ".v3-status b{color:#141B2D}",
-    ".v3-cam{position:absolute;right:12px;top:12px;display:flex;gap:6px}",
-    ".v3-cam button{min-height:34px;padding:0 11px;border-radius:999px;border:1px solid rgba(20,27,45,.12);background:rgba(255,255,255,.9);font:500 12px Geist,system-ui,sans-serif;color:#141B2D;cursor:pointer}",
+    ".v3-cam{display:flex;justify-content:flex-end;gap:6px;padding:8px 10px 0}",
+    ".v3-cam button{min-height:44px;padding:0 11px;border-radius:999px;border:1px solid rgba(20,27,45,.12);background:rgba(255,255,255,.9);font:500 12px Geist,system-ui,sans-serif;color:#141B2D;cursor:pointer}",
     ".v3-cam button[aria-pressed=true]{background:#141B2D;color:#fff}",
     ".v3-side{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px;min-width:0}",
     ".v3-card{background:rgba(255,255,255,.75);border:1px solid #fff;border-radius:14px;padding:12px}",
@@ -93,7 +97,7 @@
     ".v3-note{margin:0;font-size:11.5px;line-height:1.45;color:#5A6478}",
     ".v3-toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(255,255,255,.96);border-radius:12px;padding:8px 12px;font:600 13px Geist,system-ui,sans-serif;display:flex;gap:8px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.18);white-space:nowrap;animation:v3-in .3s ease both}",
     ".v3-toast s{width:12px;height:12px;border-radius:3px;display:inline-block}",
-    "@media (max-width:820px){.v3-win{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto}.v3-stage{margin:0 10px 10px;min-height:0;aspect-ratio:4/5}.v3-side{padding:0 10px 10px}.v3-rl{font-size:10px}.v3-mapcard{display:none}}",
+    "@media (max-width:820px){.v3-win{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto}.v3-stagebox{margin:0 10px 10px}.v3-stage{flex:none;min-height:0;aspect-ratio:4/5}.v3-side{padding:0 10px 10px}.v3-rl{font-size:10px}.v3-mapcard{display:none}}",
     "@media (prefers-reduced-motion:reduce){.v3-back,.v3-win,.v3-toast{animation:none}}"
   ].join("\n");
   var cssDone = false;
@@ -204,9 +208,9 @@
     win.setAttribute("role", "dialog"); win.setAttribute("aria-modal", "true"); win.setAttribute("aria-label", "Coco in the villa");
     win.innerHTML =
       '<div class="v3-head"><div><b>Coco in the villa</b><span>simulated robot · 3D model of the IslandDAO V5 villa</span></div><button type="button" class="v3-x">Close</button></div>' +
+      '<div class="v3-stagebox"><div class="v3-cam"><button type="button" data-v="follow" aria-pressed="true">Follow Coco</button><button type="button" data-v="whole" aria-pressed="false">Whole villa</button></div>' +
       '<div class="v3-stage"><div class="v3-msg">Loading the villa…</div><div class="v3-lbls"></div>' +
-      '<div class="v3-cam"><button type="button" data-v="follow" aria-pressed="true">Follow Coco</button><button type="button" data-v="whole" aria-pressed="false">Whole villa</button></div>' +
-      '<div class="v3-status" aria-live="polite"><b>Found:</b> ' + esc(room.name) + '</div></div>' +
+      '<div class="v3-status" aria-live="polite"><b>Found:</b> ' + esc(room.name) + '</div></div></div>' +
       '<div class="v3-side">' +
         '<div class="v3-card"><div class="v3-lbl">The photo</div><div class="v3-photo">' + (opts.photo ? '<img alt="The photo sent to Coco" src="' + esc(opts.photo) + '">' : '') +
           '<p><b>' + esc(room.name) + '</b>' + (opts.reason ? '<br>' + esc(String(opts.reason).slice(0, 120)) : '') + '<br>' + (clean ? 'No litter found.' : esc(label)) + '</p></div></div>' +
@@ -302,7 +306,7 @@
         var w = stage.clientWidth, h = stage.clientHeight, here = null;
         Object.keys(ROOMS).forEach(function (rk) { var r = ROOMS[rk]; if (S.pos[0] >= r.r[0] && S.pos[0] <= r.r[2] && S.pos[1] >= r.r[1] && S.pos[1] <= r.r[3] && (!here || ROOMS[here].outdoor)) here = rk; });
         Object.keys(ROOMS).forEach(function (rk) { var r = ROOMS[rk], c = P((r.r[0] + r.r[2]) / 2, (r.r[1] + r.r[3]) / 2); v3.set(c[0], (r.y || 0) + 1.6, c[1]).project(camera);
-          var el = LBL[rk], sx = (v3.x + 1) / 2 * w, sy = (1 - v3.y) / 2 * h; el.style.left = sx + "px"; el.style.top = sy + "px"; el.style.display = (v3.z < 1 && sx > -60 && sx < w + 60 && sy > 0 && sy < h + 30) ? "" : "none";
+          var el = LBL[rk], sx = (v3.x + 1) / 2 * w, sy = (1 - v3.y) / 2 * h; el.style.left = Math.min(Math.max(sx, 48), w - 48) + "px"; el.style.top = Math.max(sy, 40) + "px"; // keep the label inside the view el.style.display = (v3.z < 1 && sx > -60 && sx < w + 60 && sy > 0 && sy < h + 30) ? "" : "none";
           el.classList.toggle("hot", rk === here); el.classList.toggle("tgt", rk === S.target); });
         if (t - mapT > .1) { mapT = t; drawMap(); }
         raf = requestAnimationFrame(frame);
@@ -338,5 +342,5 @@
     return done;
   }
 
-  window.VillaSim = { isVilla: function (p) { return !!ROOMS[ALIAS[p] || p]; }, open: open, rooms: Object.keys(ROOMS) };
+  window.VillaSim = { preload: function () { ensureThree().catch(function () {}); }, isVilla: function (p) { return !!ROOMS[ALIAS[p] || p]; }, open: open, rooms: Object.keys(ROOMS) };
 })();

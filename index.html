@@ -27,12 +27,14 @@
 <body>
 
 <!-- THE STORE FIRST: the product is the skill store; Coco (below) is the first robot using it -->
+<nav class="topNav" aria-label="Sections">
+  <img src="favicon.png" alt="" class="heroLogo" width="28" height="28">
+  <span class="heroBrand">Isla Skills</span>
+  <a href="#store" class="navLink">Store</a><a href="#coco" class="navLink">Robot #1 · Coco</a><a href="#earn" class="navLink">Earn</a>
+  <span class="pill" id="modePill"><span class="dot" id="modeDot"></span><span id="modeTxt">devnet</span></span>
+</nav>
 <div class="store" id="store" role="region" aria-labelledby="storeTitle">
-  <div class="heroTop">
-    <img src="favicon.png" alt="" class="heroLogo" width="28" height="28">
-    <span class="heroBrand">Isla Skills</span>
-    <span class="pill" id="modePill"><span class="dot" id="modeDot"></span><span id="modeTxt">devnet</span></span>
-  </div>
+  <p class="zoneTag">Skill store</p>
   <div class="storeHead">
     <h1 id="storeTitle">The skill store for robots.</h1>
     <p class="storeLede">Robots call skills as APIs and pay for every use in USDC on Solana, on their own. Skills come from AI and from people, and each payment goes straight to whoever made the skill.</p>
@@ -42,21 +44,24 @@
       <div class="scTop"><span class="scIcon c1"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span><span class="scState" id="sc-litter-spotter">Available</span></div>
       <h3>Litter Spotter <span class="scKind">AI</span></h3>
       <p>Looks at a photo, finds the litter and says which room of the villa it shows.</p>
-      <div class="scPrice"><b>0.010</b> <small>USDC / use</small></div>
+      <div class="scPrice"><span class="pricePill"><b>0.010</b> USDC / use</span></div>
+      <span class="scBy">by <span id="by-litter-spotter">—</span></span>
       <div class="scMeta"><span><b id="u-litter-spotter">—</b> uses</span><span><b id="e-litter-spotter">—</b> USDC earned</span></div>
     </article>
     <article class="skillCard" role="listitem" data-skill="human-reviewer">
       <div class="scTop"><span class="scIcon c2"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span class="scState" id="sc-human-reviewer">Available</span></div>
       <h3>Human Reviewer <span class="scKind">Person</span></h3>
       <p>A real person answers when the AI isn't sure, from anywhere, and gets paid for it.</p>
-      <div class="scPrice"><b>0.005</b> <small>USDC / review</small></div>
+      <div class="scPrice"><span class="pricePill"><b>0.005</b> USDC / review</span></div>
+      <span class="scBy">by <span id="by-human-reviewer">the person who answers</span></span>
       <div class="scMeta"><span><b id="u-human-reviewer">—</b> uses</span><span><b id="e-human-reviewer">—</b> USDC earned</span></div>
     </article>
     <article class="skillCard" role="listitem" data-skill="cleanup-planner">
       <div class="scTop"><span class="scIcon c3"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h11M9 12h11M9 19h11"/><path d="M4 5h.01M4 12h.01M4 19h.01"/></svg></span><span class="scState" id="sc-cleanup-planner">Available</span></div>
       <h3>Cleanup Planner <span class="scKind">Planner</span></h3>
       <p>Turns what was found into a cleanup plan: order and the right recycling bin.</p>
-      <div class="scPrice"><b>0.002</b> <small>USDC / use</small></div>
+      <div class="scPrice"><span class="pricePill"><b>0.002</b> USDC / use</span></div>
+      <span class="scBy">by <span id="by-cleanup-planner">—</span></span>
       <div class="scMeta"><span><b id="u-cleanup-planner">—</b> uses</span><span><b id="e-cleanup-planner">—</b> USDC earned</span></div>
     </article>
     <article class="skillCard soon" role="listitem">
@@ -66,10 +71,47 @@
       <div class="scPrice"><small>Open to developers soon</small></div>
     </article>
   </div>
-  <div class="robotStrip glass">
-    <img src="favicon.png" alt="" width="44" height="44">
-    <div><b>Robot #1 · Coco</b><span>The first robot of IslandDAO, simulated for now. It is using these skills in the villa: take a photo and watch it pay.</span></div>
-    <button type="button" class="go" id="storeGo">Watch Coco use them</button>
+  <div class="storeBottom">
+    <!-- store numbers, read from Solana -->
+    <section class="storeLive">
+      <h2>Live usage <small>read from Solana devnet, not from this browser</small></h2>
+      <div class="stats">
+        <div><b id="sPhotos">—</b><span>photos analyzed</span></div>
+        <div><b id="sCalls">—</b><span>paid skill calls</span></div>
+        <div><b id="sPaid">—</b><span>USDC paid to skill makers</span></div>
+        <div><b id="sPeople">—</b><span>people paid for reviews</span></div>
+      </div>
+      <p class="small muted" id="sStale" style="margin:0" hidden></p>
+    </section>
+    <section id="earn">
+      <h2>Earn by helping robots</h2>
+      <p class="small muted" style="margin:0">When Coco's AI isn't sure what it sees, it asks a person. Answer from anywhere with one tap, and Coco pays you in USDC for each review you do.</p>
+      <a class="openin" href="review.html">Review photos and get paid →</a>
+    </section>
+  </div>
+</div>
+
+<!-- ROBOT #1: Coco is a customer of the store, with its own wallet -->
+<div class="coco" id="coco" role="region" aria-labelledby="cocoTitle">
+  <div class="cocoId">
+    <img src="favicon.png" alt="" width="56" height="56">
+    <div><p class="zoneTag light">Robot #1</p><h2 id="cocoTitle">Coco</h2><p class="cocoSub">A cleaning robot in the IslandDAO V5 villa. Simulated for now: a phone camera plays its eyes.</p></div>
+  </div>
+  <div class="cocoWallet">
+    <span class="cwLbl">Coco’s own wallet · Solana devnet</span>
+    <span class="cwBal"><b id="cBal">—</b> USDC</span>
+    <a class="cwAddr tap" id="cocoTxs" target="_blank" rel="noopener" hidden>— · every payment ↗</a>
+    <div class="cwMeter" role="progressbar" aria-label="Daily budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="cMeter"><i></i></div>
+    <span class="cwSpent" id="cSpent">— spent today · daily budget —</span>
+  </div>
+  <ol class="cocoHow">
+    <li><b>1</b>A skill names its price with HTTP <span class="mono">402</span>.</li>
+    <li><b>2</b>Coco’s wallet signs the payment on its own, within its daily budget.</li>
+    <li><b>3</b>The USDC goes straight to the skill’s maker. Coco never pays itself.</li>
+  </ol>
+  <div class="cocoCta">
+    <button type="button" class="go" id="storeGo">Start a Clean Sweep</button>
+    <a class="cocoTop tap" href="#topup">Top up Coco</a>
   </div>
 </div>
 
@@ -79,7 +121,7 @@
     <div class="heroLeft">
       <div class="heroText">
         <div id="heroIntro" class="swap">
-          <p class="robotTag"><span class="rtDot" aria-hidden="true"></span>Robot #1 · Coco · simulated</p>
+          <p class="robotTag"><span class="rtDot" aria-hidden="true"></span>Robot #1 · Coco · live</p>
           <h2 id="heroTitle" class="heroH">Coco is using these skills now.</h2>
           <p class="heroLede">Coco is a simulated cleaning robot in the IslandDAO V5 villa. Take a photo of any room: Coco finds the litter and pays each skill it uses, on its own.</p>
         </div>
@@ -131,26 +173,9 @@
 <div class="toasts" id="toasts"></div>
 
 <div class="wrap">
-  <!-- NUMBERS -->
-  <section>
-    <h2>Live usage <small>read from Solana devnet, not from this browser</small></h2>
-    <div class="stats">
-      <div><b id="sPhotos">—</b><span>photos analyzed</span></div>
-      <div><b id="sCalls">—</b><span>paid skill calls</span></div>
-      <div><b id="sPaid">—</b><span>USDC paid to skill makers</span></div>
-      <div><b id="sPeople">—</b><span>people paid for reviews</span></div>
-    </div>
-    <p class="small muted" id="sStale" style="margin:0" hidden></p>
-    <a class="small tap" id="cocoTxs" target="_blank" rel="noopener" hidden>See every payment on Solana Explorer ↗</a>
-  </section>
 
-  <div class="grid two">
-    <section>
-      <h2>Earn by helping robots</h2>
-      <p class="small muted" style="margin:0">When Coco's AI isn't sure what it sees, it asks a person. Answer from anywhere with one tap, and Coco pays you in USDC for each review you do.</p>
-      <a class="openin" href="review.html">Review photos and get paid →</a>
-    </section>
-    <section>
+  <div class="grid one">
+    <section id="topup">
       <h2>Top up Coco</h2>
       <p class="small muted" style="margin:0">Coco spends test USDC on Solana devnet. Connect your Solana wallet (Solflare, Phantom, Backpack…) on <b>Devnet</b> to send it some.</p>
       <div class="row">
@@ -243,7 +268,9 @@ function renderStatus(){
   if(!state)return;
   const ph=state.photos;
   $("limits").textContent=`${ph.perVisitor} photos per visitor a day (you’ve used ${ph.yours}).`;
-  if(state.address){$("cocoTxs").href=addrUrl(state.address);$("cocoTxs").hidden=false}
+  if(state.address){$("cocoTxs").href=addrUrl(state.address);$("cocoTxs").textContent=state.address.slice(0,4)+"…"+state.address.slice(-4)+" · every payment ↗";$("cocoTxs").hidden=false}
+  // who gets paid for each skill: its maker's wallet (Human Reviewer: whoever answers)
+  for(const k of state.skills||[]){const el=$("by-"+k.id);if(el&&ADDR.test(k.payTo))el.innerHTML=`<a href="${addrUrl(k.payTo)}" target="_blank" rel="noopener">${k.payTo.slice(0,4)}…${k.payTo.slice(-4)} ↗</a>`}
   // Say exactly who settles the payments: the remote facilitator or this site's own server (plan B)
   const f=String(state.facilitator||"");
   $("facTxt").textContent=/^local/.test(f)?", settled by this site’s own server (plan B: it checks each payment and sends it to Solana)."
@@ -266,12 +293,16 @@ async function loadStats(){
 
 /* Coco's wallet: one line with the real balance the server reads from Solana */
 let shownBal=null;
+function setBal(t){$("wBal").textContent=t;$("cBal").textContent=t} // the hero line and Coco's wallet panel show the same number
 function renderWalletCard(){
   const bal=state&&state.usdcUnits!=null?Number(state.usdcUnits):null;
-  if(bal==null){$("wBal").textContent="—"}
-  else if(shownBal==null||reducedMotion()){shownBal=bal;$("wBal").textContent=usdc3(bal)}
+  if(bal==null){setBal("—")}
+  else if(shownBal==null||reducedMotion()){shownBal=bal;setBal(usdc3(bal))}
   else if(bal!==shownBal){const from=shownBal,t0=performance.now();shownBal=bal;
-    const step=now=>{const k=Math.min(1,(now-t0)/800);$("wBal").textContent=usdc3(from+(bal-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+    const step=now=>{const k=Math.min(1,(now-t0)/800);setBal(usdc3(from+(bal-from)*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+  const b=state&&state.budget;
+  if(b&&b.limitUnits){const pct=Math.min(100,b.spentUnits/b.limitUnits*100);$("cMeter").firstElementChild.style.width=pct+"%";$("cMeter").setAttribute("aria-valuenow",Math.round(pct));
+    $("cSpent").textContent=`${usdc3(b.spentUnits)} spent today · daily budget ${usdc3(b.limitUnits)}`}
 }
 
 /* ---------- photo: taken with the phone camera (or chosen from files on a computer) ---------- */

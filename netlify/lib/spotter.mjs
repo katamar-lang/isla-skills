@@ -7,6 +7,7 @@ import * as z from "zod/v4";
 export const MODEL = "claude-haiku-5-5";
 /* Where the photo was taken: the beach, a room of the IslandDAO V5 villa (for the villa simulation), or somewhere else. */
 export const PLACES = ["beach", "pool_terrace", "dining", "kitchen", "living", "reception", "tv_room", "billiards", "garden", "other"];
+const VILLA = PLACES.filter(p => p !== "beach" && p !== "other");
 const TYPES = ["plastic_bottle", "plastic_bag", "cup_or_straw", "food_wrapper", "cigarette_butt", "can", "glass", "fishing_gear_or_rope", "styrofoam", "paper_or_cardboard", "other"];
 export const SpotSchema = z.object({
   isBeach: z.boolean().describe("true if the photo shows a beach, sand, shore or similar outdoor ground"),
@@ -50,6 +51,7 @@ Coco also works inside the IslandDAO V5 villa. If the photo was taken there, set
 - billiards: red billiards table, cue rack, round mirrors, long wooden coworking table with laptops, shelf with fitness gear
 - garden: lawn and tall hedges, outdoor wooden work table under a white tent
 Use "beach" for a beach or shore and "other" for anywhere else. Inside the villa, things in use (cables plugged in, bags, towels, laptops) are not litter; discarded cups, bottles, cans, wrappers and paper are.
+Inside the villa, look carefully at the whole photo, including the floor, tables, the pool edge, corners and the background. Report small or distant objects that could be litter (bottles, cans, cups, straws, wrappers, napkins, paper, plastic bags), even if they are tiny, partly hidden or blurry: give them low confidence instead of leaving them out. When you are not sure whether such an object is litter or still in use, put it in "items" with low confidence and fill "unsure" with a one-tap question for a person (e.g. "Is the cup on the pool edge litter or still in use?", options "Litter" / "Still in use"). Only answer with no items when the room really looks clean.
 Never describe people. Keep labels short.`;
 
 let client = null;
@@ -107,7 +109,8 @@ export function clean(out) {
       notLitterOption: String(u.notLitterOption || "Not litter").slice(0, 30), aiGuess: u.aiGuess === "not_litter" ? "not_litter" : "litter" };
   } else {
     const i = items.findIndex(x => x.confidence === "low");
-    if (i >= 0) unsure = { itemIndex: i, question: `Is the ${items[i].label} (${items[i].where}) litter?`, litterOption: "Yes, litter", notLitterOption: "No, natural", aiGuess: "litter" };
+    if (i >= 0) unsure = { itemIndex: i, question: `Is the ${items[i].label} (${items[i].where}) litter?`, litterOption: "Yes, litter",
+      notLitterOption: VILLA.includes(out.place) ? "No, still in use" : "No, natural", aiGuess: "litter" };
   }
   const place = PLACES.includes(out.place) ? out.place : (out.isBeach ? "beach" : "other");
   return { isBeach: !!out.isBeach, place, placeReason: String(out.placeReason || "").slice(0, 140), summary: String(out.summary || "").slice(0, 160), items, unsure };

@@ -92,6 +92,7 @@
     if (!place) return Promise.resolve();
     injectCss();
     var items = (opts.items || []).filter(function (i) { return i; });
+    var clean = !items.length; // nothing to pick up: Coco still goes there, checks the room and comes back
     var item = items.filter(function (i) { return i.box; })[0] || items[0] || { label: "item" };
     var binKey = TYPE_BIN[item.type] || "general", bin = BIN[binKey];
     var lastFocus = document.activeElement, closed = false, resolveDone;
@@ -156,7 +157,7 @@
       else det.hidden = true;
     }
     function toast(html) { var t = el("div", "vs-toast", html); stage.appendChild(t); setTimeout(function () { t.remove(); }, 2600); }
-    var STEPS = ["Find the room", "Go there", "Pick it up", "Recycle", "Back to dock"], stepsEl = q(".vs-steps");
+    var STEPS = clean ? ["Find the room", "Go there", "Check the room", "Back to dock"] : ["Find the room", "Go there", "Pick it up", "Recycle", "Back to dock"], stepsEl = q(".vs-steps");
     STEPS.forEach(function (s) { stepsEl.appendChild(el("span", "vs-step", esc(s))); });
     function stepState(i) { stepsEl.querySelectorAll(".vs-step").forEach(function (s, j) { s.className = "vs-step" + (j < i ? " done" : j === i ? " now" : ""); }); }
 
@@ -180,6 +181,15 @@
       await wait(1800); if (closed) return;
       stepState(1);
       if (place !== here) await walk(place, "On the way to the " + ROOMS[place].name.toLowerCase()); if (closed) return;
+      if (clean) {
+        stepState(2); showPhoto(false); scan.style.display = "block"; hud(ROOMS[place].name, "checking", "Looking for litter…");
+        await wait(1600); if (closed) return; scan.style.display = "none";
+        hud(ROOMS[place].name, "checked", "All clean here. Nothing to pick up."); toast("All clean here. Nothing to pick up.");
+        await wait(1800); if (closed) return;
+        stepState(3); await walk(DOCK, "Heading back to the dock"); if (closed) return;
+        stepState(4); hud("Reception", "docked · charging", "Done. The " + ROOMS[place].name.toLowerCase() + " is clean.");
+        return;
+      }
       stepState(2); showPhoto(true); hud(ROOMS[place].name, "picking it up", "Picking up the " + (item.label || "item") + "…");
       await wait(1200); if (closed) return; det.classList.add("grab"); await wait(1000); if (closed) return;
       toast('<s style="background:' + bin.color + '"></s>Picked up: ' + esc(item.label || "item"));

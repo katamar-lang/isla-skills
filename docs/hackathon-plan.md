@@ -11,7 +11,7 @@ Every decision is judged by what a judge sees in a **2-minute demo**:
 
 If something doesn't help with that, it waits until after the hackathon.
 
-This is the build spec for the hackathon. It replaces the earlier week-2 idea of an Anchor program. Deadline: **submit by Nov 11, 2026**. The owner builds and presents this project alone: no joint demos or partnerships with other projects.
+This is the build spec for the hackathon. It replaces the earlier week-2 idea of an Anchor program. Deadline: **final submission by Nov 10, 2026** (not Nov 11). The owner builds and presents this project alone: no joint demos or partnerships with other projects.
 
 ## The new focus
 
@@ -72,7 +72,7 @@ Remove the "Community vote" panel, close-round button, "See all votes on Solana"
 ### 7. Any Solana wallet
 Use the Solana Wallet Standard so any compatible wallet appears in a picker. Keep "Open in Phantom / Open in Solflare" deep links for phones. Copy should say "your Solana wallet (Solflare, Phantom, Backpack…)", never present Phantom as the main one.
 
-## Not before Nov 11
+## Not before the Nov 10 submission
 - Anchor/Rust program (roadmap).
 - Mainnet with real money.
 - A physical robot arm (roadmap).

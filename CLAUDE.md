@@ -1,6 +1,6 @@
 # Isla Skills · project context for Claude
 
-Read this first, then [`docs/hackathon-plan.md`](docs/hackathon-plan.md) (the build spec and the goal: **win IslandHack v5**, entries close **Nov 11, 2026**). Where the two differ, the plan wins.
+Read this first, then [`docs/hackathon-plan.md`](docs/hackathon-plan.md) (the build spec and the goal: **win IslandHack v5**, final submission due **Nov 10, 2026** (not Nov 11)). Where the two differ, the plan wins.
 
 ## What it is
 

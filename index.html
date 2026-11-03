@@ -34,26 +34,40 @@
     <span class="pill" id="modePill"><span class="dot" id="modeDot"></span><span id="modeTxt">devnet</span></span>
   </div>
   <div class="heroGrid">
-    <div class="heroText">
-      <div id="heroIntro" class="swap">
-        <h1 id="heroTitle">The skill store for robots.</h1>
-        <p class="heroLede">Robots call skills as APIs and pay per use in USDC on Solana. Watch Coco, a simulated robot, do it.</p>
+    <div class="heroLeft">
+      <div class="heroText">
+        <div id="heroIntro" class="swap">
+          <h1 id="heroTitle">The skill store for robots.</h1>
+          <p class="heroLede">Robots call skills as APIs and pay per use in USDC on Solana. Watch Coco, a simulated robot, do it.</p>
+        </div>
+        <div id="heroLive" class="swap" hidden>
+          <p class="eyebrow">Beach Patrol · Live</p>
+          <p id="heroPhase" class="heroPhase">Litter Spotter is looking…</p>
+        </div>
+        <p class="heroNote" id="heroNote" role="status" hidden></p>
       </div>
-      <div id="heroLive" class="swap" hidden>
-        <p class="eyebrow">Beach Patrol · Live</p>
-        <p id="heroPhase" class="heroPhase">Litter Spotter is looking…</p>
+      <div class="walletCard glass" id="walletCard">
+        <span class="wLbl">Coco’s wallet <span class="srOnly">balance</span></span>
+        <span class="wBal"><b id="wBal">—</b><small>USDC</small></span>
+        <div class="wMeter" id="wMeter" role="progressbar" aria-label="Daily budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+        <span class="wSpent" id="wSpent">— spent today · daily budget —</span>
+      </div>
+      <div class="heroCta">
+        <button type="button" class="go big" id="heroBtn">Run Beach Patrol</button>
+        <button type="button" class="big ghost" id="heroAgain" hidden>Run it again</button>
+        <p class="heroCap" id="heroCap">No wallet needed. Coco pays from its own devnet wallet. <button type="button" class="linkBtn" id="ownPhoto">or use your own photo</button></p>
       </div>
     </div>
-    <div class="heroStage">
-      <div class="photoWrap">
-        <div class="photoFrame" id="photoFrame">
-          <img id="photoImg" alt="Beach photo Coco will check">
-          <video id="cam" playsinline muted hidden></video>
-          <div class="scan" id="scan" hidden></div>
-          <div class="boxes" id="boxes" aria-hidden="true"></div>
+    <div class="heroRight">
+      <div class="heroStage">
+        <div class="photoWrap glass">
+          <div class="photoFrame" id="photoFrame">
+            <img id="photoImg" alt="Beach photo Coco will check">
+            <video id="cam" playsinline muted hidden></video>
+            <div class="scan" id="scan" hidden></div>
+            <div class="boxes" id="boxes" aria-hidden="true"></div>
+          </div>
         </div>
-      </div>
-      <div class="ringsRow">
         <div class="rings" role="img" id="ringsImg" aria-label="Paid so far: 0.000 USDC">
           <svg viewBox="0 0 120 120" aria-hidden="true">
             <circle class="track" cx="60" cy="60" r="56"/><circle class="track" cx="60" cy="60" r="47"/><circle class="track" cx="60" cy="60" r="38"/>
@@ -63,35 +77,21 @@
           </svg>
           <div class="ringsCenter"><b id="paidTotal">0.000</b><span>USDC paid</span></div>
         </div>
-        <ul class="legend" id="legend">
-          <li data-skill="litter-spotter"><span class="ldot c1"></span><span class="lname">Litter Spotter <span class="lprice">0.010</span></span><span class="lstate" id="st-litter-spotter">ready</span></li>
-          <li data-skill="human-reviewer"><span class="ldot c2"></span><span class="lname">Human Reviewer <span class="lprice">0.005</span></span><span class="lstate" id="st-human-reviewer">ready</span></li>
-          <li data-skill="cleanup-planner"><span class="ldot c3"></span><span class="lname">Cleanup Planner <span class="lprice">0.002</span></span><span class="lstate" id="st-cleanup-planner">ready</span></li>
-        </ul>
       </div>
-      <p class="log"><span class="logLbl">LOG</span> <span id="logTxt" aria-live="polite">ready · no wallet needed</span></p>
-    </div>
-    <div class="heroCta">
-      <button type="button" class="go big" id="heroBtn">Run Beach Patrol</button>
-      <button type="button" class="big ghost" id="heroAgain" hidden>Run it again</button>
-      <p class="heroCap" id="heroCap">No wallet needed. Coco pays from its own devnet wallet. <button type="button" class="linkBtn" id="ownPhoto">or use your own photo</button></p>
+      <ul class="legend glass" id="legend">
+        <li data-skill="litter-spotter"><span class="ldot c1"></span><span class="lname">Litter Spotter <span class="lprice">0.010</span></span><span class="lstate" id="st-litter-spotter">ready</span></li>
+        <li data-skill="human-reviewer"><span class="ldot c2"></span><span class="lname">Human Reviewer <span class="lprice">0.005</span></span><span class="lstate" id="st-human-reviewer">ready</span></li>
+        <li data-skill="cleanup-planner"><span class="ldot c3"></span><span class="lname">Cleanup Planner <span class="lprice">0.002</span></span><span class="lstate" id="st-cleanup-planner">ready</span></li>
+      </ul>
     </div>
   </div>
 </main>
 <div class="toasts" id="toasts"></div>
 
 <div class="wrap">
-  <!-- PATROL DETAILS: the same patrol, step by step -->
-  <section id="details">
-    <h2>Patrol details <small>each skill: 402 → paid → result</small></h2>
-    <ol class="timeline" id="timeline">
-      <li class="step idle"><b>1 · Photo</b><span class="muted">Coco looks at the beach.</span></li>
-      <li class="step idle"><b>2 · Litter Spotter <span class="kind">AI</span></b><span class="muted">Answers <span class="mono">402 Payment Required</span>. Coco's wallet pays 0.01 USDC. It lists the litter.</span></li>
-      <li class="step idle"><b>3 · Human Reviewer <span class="kind">Person</span></b><span class="muted">Only if the AI isn't sure. A real person has 20 seconds to answer and is paid 0.005 USDC.</span></li>
-      <li class="step idle"><b>4 · Cleanup Planner <span class="kind">Planner</span></b><span class="muted">Paid 0.002 USDC. Turns the list into a cleanup plan.</span></li>
-    </ol>
-    <div id="result" hidden></div>
-    <h3>Try another photo</h3>
+  <!-- MORE PHOTOS -->
+  <section id="photos">
+    <h2>Try another photo</h2>
     <div class="row">
       <button id="pickPhoto" type="button">Take or upload a photo</button>
       <input id="file" type="file" accept="image/*" capture="environment" aria-label="Take or upload a photo" hidden>
@@ -160,14 +160,30 @@
   <p class="small muted foot">Prototype for IslandHack v5 · IslandDAO, Florianópolis. Coco is simulated: a phone or laptop camera plays its eyes. Litter Spotter uses Claude (Haiku) with vision. Payments are real USDC transfers on Solana <b>devnet</b> (test money), with x402<span id="facTxt">.</span></p>
 </div>
 
-<!-- Cleanup plan: a sheet that slides up -->
-<div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+<!-- PATROL LOG: a small bar at the bottom; it opens the whole timeline in a sheet (a side panel on desktop) -->
+<button type="button" class="logBar" id="logBar" aria-controls="logSheet" aria-expanded="false" aria-haspopup="dialog">
+  <span class="handle" aria-hidden="true"></span>
+  <span class="lbText"><span class="lbTitle">Patrol log</span><span class="lbSum" id="lbSum">Every step and payment, live</span></span>
+  <span class="lbDot" id="lbDot" aria-hidden="true"></span>
+</button>
+<div id="logSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="logTitle" hidden>
   <div class="sheetPanel" id="sheetPanel">
-    <div class="sheetHead">
-      <h2 id="sheetTitle" tabindex="-1">The cleanup plan</h2>
-      <button type="button" id="sheetClose" class="sheetX" aria-label="Close the cleanup plan">✕</button>
+    <div class="sheetGrab" id="sheetGrab">
+      <span class="handle" aria-hidden="true"></span>
+      <div class="sheetHead">
+        <div><h2 id="logTitle" tabindex="-1">Patrol log</h2><span class="lbSum" id="lbSum2">each skill: 402 → paid → result</span></div>
+        <button type="button" id="sheetClose" class="sheetClose">Close</button>
+      </div>
     </div>
-    <div id="sheetBody"></div>
+    <div class="sheetScroll" id="sheetScroll">
+      <ol class="timeline" id="timeline" aria-live="polite">
+        <li class="step idle" data-static><b>1 · Photo</b><span class="muted">Coco looks at the beach.</span></li>
+        <li class="step idle" data-static><b>2 · Litter Spotter <span class="kind">AI</span></b><span class="muted">Answers <span class="mono">402 Payment Required</span>. Coco's wallet pays 0.01 USDC. It lists the litter.</span></li>
+        <li class="step idle" data-static><b>3 · Human Reviewer <span class="kind">Person</span></b><span class="muted">Only if the AI isn't sure. A real person has 20 seconds to answer and is paid 0.005 USDC.</span></li>
+        <li class="step idle" data-static><b>4 · Cleanup Planner <span class="kind">Planner</span></b><span class="muted">Paid 0.002 USDC. Turns the list into a cleanup plan.</span></li>
+      </ol>
+      <div id="result" hidden></div>
+    </div>
   </div>
 </div>
 
@@ -209,7 +225,8 @@ function renderStatus(){
   $("modeTxt").textContent=!state?"offline":why?"setting up":"devnet";
   $("modePill").title=why||"Live on Solana devnet (test USDC)";
   $("modePill").classList.toggle("warn",!!why);
-  if(why&&!busy&&btnMode==="idle")log(why.toLowerCase());
+  if(!busy&&btnMode==="idle"&&(why||/can’t patrol/.test($("heroNote").textContent)))note(why?why+". Coco can’t patrol right now.":"");
+  renderWalletCard();
   if(!state)return;
   $("cocoAddr").innerHTML=state.address?addrLink(state.address):"not set up";
   $("cocoBal").textContent=state.usdcUnits==null?"—":usdc(state.usdcUnits);
@@ -250,6 +267,21 @@ function renderSkills(){
     </div>`}).join("");
 }
 
+/* Coco's wallet card: the real balance read by the server from Solana, and today's budget */
+let shownBal=null;
+function renderWalletCard(){
+  const bal=state&&state.usdcUnits!=null?Number(state.usdcUnits):null;
+  if(bal==null){$("wBal").textContent="—"}
+  else if(shownBal==null||reducedMotion()){shownBal=bal;$("wBal").textContent=usdc3(bal)}
+  else if(bal!==shownBal){const from=shownBal,t0=performance.now();shownBal=bal;
+    const step=now=>{const k=Math.min(1,(now-t0)/800);$("wBal").textContent=usdc3(from+(bal-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+  const b=state&&state.budget;
+  if(!b){$("wSpent").textContent="— spent today";return}
+  const pct=Math.min(100,b.spentUnits/b.limitUnits*100);
+  $("wMeter").firstElementChild.style.width=pct+"%";$("wMeter").classList.toggle("full",pct>=100);$("wMeter").setAttribute("aria-valuenow",Math.round(pct));
+  $("wSpent").textContent=`${usdc3(b.spentUnits)} spent today · daily budget ${usdc3(b.limitUnits)}`;
+}
+
 /* ---------- photo: upload, camera, samples ---------- */
 function shrink(src){ // max 1024 px JPEG, so the photo is small and fast
   const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight,k=Math.min(1,1024/Math.max(w,h));
@@ -275,7 +307,7 @@ function setPhoto(dataUrl,{start}={}){
 $("file").onchange=e=>{
   const f=e.target.files[0];if(!f)return;stopCam();
   const img=new Image();img.onload=()=>{setPhoto(shrink(img),{start:true});URL.revokeObjectURL(img.src)};
-  img.onerror=()=>{$("msg").textContent="That file isn't a photo Coco can read. Try a JPEG or PNG.";log("✕ that file isn't a photo Coco can read")};
+  img.onerror=()=>{$("msg").textContent="That file isn't a photo Coco can read. Try a JPEG or PNG.";note("That file isn’t a photo Coco can read. Try a JPEG or PNG.")};
   img.src=URL.createObjectURL(f);
   e.target.value="";
 };
@@ -288,7 +320,7 @@ $("camBtn").onclick=async()=>{
     $("cam").hidden=false;$("photoImg").hidden=true;framePhoto($("cam").videoWidth,$("cam").videoHeight);
     $("camBtn").textContent="Stop camera";
     $("msg").textContent="This camera is Coco's eyes now. Point it at the scene and tap Run Beach Patrol.";
-    toTop();log("camera on · tap Run Beach Patrol");
+    toTop();note("This camera is Coco’s eyes now. Tap Run Beach Patrol.","info");
   }catch(e){$("msg").textContent="Couldn't open the camera. Allow camera access, or upload a photo instead."}
 };
 /* Sample photos in assets/samples/: list only files that exist (no 404s). */
@@ -314,11 +346,27 @@ $("ownPhoto").onclick=()=>$("file").click();
 let steps=[];
 function addStep(s){steps.push(s);renderTimeline();return s}
 function renderTimeline(){
-  $("timeline").innerHTML=steps.map(s=>`<li class="step ${s.state||""}">
-    <b>${esc(s.title)}${s.kind?` <span class="kind">${esc(s.kind)}</span>`:""}</b>
+  const ol=$("timeline");
+  if(ol.querySelector("[data-static]"))ol.innerHTML="";
+  steps.forEach((s,i)=>{
+    const h=`<b>${esc(s.title)}${s.kind?` <span class="kind">${esc(s.kind)}</span>`:""}</b>
     ${s.chips?`<span class="chips">${s.chips.map(c=>`<span class="chip ${c.state||""}">${c.html}</span>`).join('<span class="sep">→</span>')}</span>`:""}
-    ${s.html?`<span class="detail">${s.html}</span>`:""}
-  </li>`).join("");
+    ${s.html?`<span class="detail">${s.html}</span>`:""}`;
+    let li=ol.children[i];
+    if(!li){li=document.createElement("li");ol.appendChild(li)}
+    const cls="step "+(s.state||"");
+    if(li.className!==cls)li.className=cls;
+    if(li.dataset.h!==h){li.dataset.h=h;li.innerHTML=h}
+  });
+  while(ol.children.length>steps.length)ol.lastElementChild.remove();
+  renderBar();
+}
+/* The bar at the bottom: "4 steps · 0.010 USDC" and a dot that pulses while Coco works */
+function renderBar(){
+  const n=steps.length,t=`${n} step${n===1?"":"s"} · ${usdc3(paidTotal)} USDC`;
+  $("lbSum").textContent=n?t+(run.error?" · stopped":run.done?" · done":""):"Every step and payment, live";
+  $("lbSum2").textContent=n?t:"each skill: 402 → paid → result";
+  $("lbDot").className="lbDot"+(busy?" busy":run.error?" err":run.done?" done":"");
 }
 const chip=(step,html,st="ok")=>{(step.chips=step.chips||[]).push({html,state:st});renderTimeline();return step.chips[step.chips.length-1]};
 
@@ -327,7 +375,7 @@ class Stop extends Error{}
 /* Phones pause hidden pages: wait until the page is visible again before retrying. */
 const waitVisible=()=>document.visibilityState!=="hidden"?Promise.resolve():new Promise(r=>document.addEventListener("visibilitychange",function f(){if(document.visibilityState!=="hidden"){document.removeEventListener("visibilitychange",f);r()}}));
 async function buy(skillId,body,step,extra={}){
-  log(`→ POST /skills/${skillId}`);
+  
   let r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body)});
   if(r.status!==402){
     step.state="err";
@@ -335,10 +383,10 @@ async function buy(skillId,body,step,extra={}){
   }
   const req=r.json.accepts&&r.json.accepts[0];
   chip(step,`<span class="mono">402</span> · ${usdc(req.maxAmountRequired)} USDC → ${addrLink(req.payTo)}`);
-  log(`← 402 · pay ${usdc3(req.maxAmountRequired)} USDC to ${skillId==="human-reviewer"?"the person who answered":"the developer"}`);
+  
   const p=await api("/api/coco/pay",{method:"POST",body:JSON.stringify({skill:skillId,requirements:req,...extra})});
   if(!p.ok){step.state="err";chip(step,"not paid","err");throw new Stop(p.json.error||"Coco's wallet couldn't pay.")}
-  log("→ X-PAYMENT · signed by Coco");
+  
   const c=chip(step,"paying…","doing");
   // If the connection drops (a phone puts the page to sleep while you answer in a wallet app),
   // send the same payment again: the store gives back the saved result and never charges twice.
@@ -347,7 +395,7 @@ async function buy(skillId,body,step,extra={}){
       r=await api(`/api/skills/${skillId}`,{method:"POST",body:JSON.stringify(body),headers:{"X-PAYMENT":p.json.payment}});
       if(r.ok||tries===0||tries>=4||(r.status!==402&&r.status<500))break;
     }catch(e){if(tries>=4)throw new Stop("Lost the connection to the skill store. Check your internet and try again.")}
-    c.html=`reconnecting… (${tries+1})`;renderTimeline();log(`… connection dropped · retrying (${tries+1})`);
+    c.html=`reconnecting… (${tries+1})`;renderTimeline();
     await waitVisible();await sleep(1500*(tries+1));
   }
   if(!r.ok){c.state="err";c.html="not paid";step.state="err";renderTimeline();const em=String(r.json.error||`The skill answered ${r.status}.`).trim();throw new Stop((/[.!?]$/.test(em)?em:em+".")+(r.json.charged===false?" Coco wasn't charged.":""))}
@@ -362,7 +410,7 @@ async function buy(skillId,body,step,extra={}){
 async function patrol(){
   if(busy)return;
   if(stream&&!$("cam").hidden){photo=shrink($("cam"));$("photoImg").src=photo;stopCam()}
-  if(!photo){$("msg").textContent="Take or upload a photo first.";log("choose a photo first");return}
+  if(!photo){$("msg").textContent="Take or upload a photo first.";note("Choose a photo first.");return}
   busy=true;$("result").hidden=true;$("msg").textContent="";
   steps=[];run={running:true,photo};
   heroStart();
@@ -397,12 +445,11 @@ async function patrol(){
     const s3=addStep({title:`${spot.unsure?4:3} · Cleanup Planner`,kind:"Planner",state:"doing",skill:"cleanup-planner"});
     heroPhase("Planning the cleanup…");setState("cleanup-planner","working…","working");
     const plan=await buy("cleanup-planner",{items},s3);
-    s3.html=plan.steps.length?`${plan.steps.length} steps · about ${plan.minutes} min · ${plan.recyclablePercent}% recyclable`:esc(plan.message);
+    s3.html=plan.steps.length?`${plan.steps.length} step${plan.steps.length===1?"":"s"} · about ${plan.minutes} min · ${plan.recyclablePercent}% recyclable`:esc(plan.message);
     renderTimeline();
     run={...run,running:false,done:true,items:items.reduce((a,i)=>a+i.count,0),kinds:items.length,plan};
     addStep({title:"Done",state:"ok",html:"Coco paid each skill on its own. Nobody tapped Confirm."});
     showResult(spot,items,plan);
-    log(`← 200 · plan: ${plan.steps.length} steps, about ${plan.minutes} min`);
     heroDone();
   }catch(e){
     const m=e instanceof Stop?e.message:"Something went wrong: "+(e&&e.message||e);
@@ -412,7 +459,7 @@ async function patrol(){
     $("msg").textContent=m;
     if(!(e instanceof Stop))console.error(e);
   }
-  busy=false;
+  busy=false;renderBar();
   loadStatus();setTimeout(loadStats,1500);
 }
 
@@ -425,7 +472,7 @@ async function askHuman(spotId,step){
   const id=r.json.reviewId,seconds=r.json.seconds||20;
   let until=Date.now()+seconds*1000; // the server's clock decides; this only drives the countdown
   skipAsked=false;
-  const countHtml=n=>`waiting for a person… <span data-count>${n}</span> s`;
+  const countHtml=n=>`waiting for a person… <span data-count aria-hidden="true">${n}</span><span aria-hidden="true"> s</span>`;
   const wait=chip(step,countHtml(seconds),"doing");
   step.html=`Anyone can answer at <a class="tap" href="review.html" target="_blank" rel="noopener">${esc(location.host)}/review</a>. <button type="button" data-skip class="skip">Skip, use the AI’s guess</button>`;renderTimeline();
   // Update only the number (no redraw), so a tap on Skip is never lost
@@ -456,10 +503,8 @@ let run={},lastFocus=null,btnMode="idle",paidTotal=0,shownTotal=0,paidCount=0,un
 const usdc3=u=>(Number(u)/1e6).toFixed(3);
 const SKILLS_ORDER=["litter-spotter","human-reviewer","cleanup-planner"];
 const RING_R={"litter-spotter":56,"human-reviewer":47,"cleanup-planner":38};
-/* Each log line stays at least 0.6 s so it can be read; a newer countdown replaces a queued one. */
-let logQ=[],logBusy=false;
-function log(t){const last=logQ[logQ.length-1];if(last&&/^… waiting/.test(last)&&/^… waiting/.test(t))logQ[logQ.length-1]=t;else logQ.push(t);pumpLog()}
-function pumpLog(){if(logBusy||!logQ.length)return;logBusy=true;$("logTxt").textContent=logQ.shift();setTimeout(()=>{logBusy=false;pumpLog()},600)}
+/* One short line under the title for errors and setup problems (the full story is in the Patrol log). */
+function note(t,cls){const el=$("heroNote");el.textContent=t||"";el.hidden=!t;el.className="heroNote"+(cls?" "+cls:"")}
 function setState(skill,text,cls){const el=$("st-"+skill);if(!el)return;el.textContent=text;el.className="lstate"+(cls?" "+cls:"")}
 function setRing(skill,full){const c=$("ring-"+skill),L=2*Math.PI*RING_R[skill];c.style.strokeDasharray=L;c.style.strokeDashoffset=full?0:L;c.classList.toggle("full",!!full)}
 function toTop(){if(scrollY>8)scrollTo({top:0,behavior:reducedMotion()?"auto":"smooth"})}
@@ -487,15 +532,15 @@ function setBtn(mode){
 }
 $("heroBtn").onclick=()=>{
   if(btnMode==="idle"||btnMode==="error")patrol();
-  else if(btnMode==="waiting"){skipAsked=true;document.querySelectorAll("[data-skip]").forEach(x=>x.disabled=true);$("heroBtn").disabled=true;log("→ skip · Coco will use the AI’s guess")}
+  else if(btnMode==="waiting"){skipAsked=true;document.querySelectorAll("[data-skip]").forEach(x=>x.disabled=true);$("heroBtn").disabled=true}
   else if(btnMode==="done")openPlan();
 };
 $("heroAgain").onclick=()=>{if(!busy)patrol()};
 function heroReady(){ // a photo is in place and nothing is running
-  if(btnMode!=="working"&&btnMode!=="waiting"){$("heroIntro").hidden=false;$("heroLive").hidden=true;$("scan").hidden=true;SKILLS_ORDER.forEach(k=>{setRing(k,false);setState(k,"ready")});paidTotal=0;animateTotal();$("boxes").innerHTML="";setBtn("idle");log("ready · no wallet needed")}
+  if(btnMode!=="working"&&btnMode!=="waiting"){$("heroIntro").hidden=false;$("heroLive").hidden=true;$("scan").hidden=true;SKILLS_ORDER.forEach(k=>{setRing(k,false);setState(k,"ready")});paidTotal=0;animateTotal();$("boxes").innerHTML="";setBtn("idle");note("")}
 }
 function heroStart(){
-  toTop();
+  toTop();note("");
   paidTotal=0;paidCount=0;unsureIdx=-1;animateTotal();
   SKILLS_ORDER.forEach(k=>{setRing(k,false);setState(k,"ready")});
   $("boxes").innerHTML="";$("scan").hidden=false;
@@ -503,56 +548,73 @@ function heroStart(){
 }
 function heroPaid(skill,units,sig){
   setRing(skill,true);setState(skill,"paid · 402 → 200","paid");
-  paidTotal+=units;paidCount++;animateTotal();
+  paidTotal+=units;paidCount++;animateTotal();renderBar();
+  loadStatus(); // Coco's real balance and today's spending, read again from the server
   toast(`Coco paid ${skill==="human-reviewer"?"a person":skill==="litter-spotter"?"Litter Spotter":"Cleanup Planner"} · ${usdc3(units)}`,sig);
 }
 function heroSpotted(spot){
   $("scan").hidden=true;
-  const n=spot.items.reduce((a,i)=>a+i.count,0);
-  log(`← 200 · ${n} item${n===1?"":"s"} found${spot.unsure?", 1 unsure":""}`);
   unsureIdx=spot.unsure?spot.unsure.itemIndex:-1;
   $("boxes").innerHTML=spot.items.map((it,i)=>it.box?`<div class="box${i===unsureIdx?" unsure":""}${it.box.y<0.1?" lowTag":""}" data-i="${i}" style="left:${it.box.x*100}%;top:${it.box.y*100}%;width:${it.box.w*100}%;height:${it.box.h*100}%;animation-delay:${i*120}ms"><span class="boxTag">${i===unsureIdx?"? ":""}${it.count>1?it.count+"× ":""}${esc(it.label)}</span></div>`:"").join("");
 }
 function heroAsking(){heroPhase("Not sure. Asking a person.");setState("human-reviewer","asking a person…","working");setBtn("waiting");$("heroBtn").disabled=false}
-function heroWaiting(n){setState("human-reviewer",`waiting for a person · ${n} s`,"working");log(`… waiting for a person · ${n} s`)}
+function heroWaiting(n){setState("human-reviewer",`asking a person · ${n} s`,"working");}
 function heroReviewed(u,verdict,human){
   const answer=verdict==="litter"?u.litterOption:u.notLitterOption;
   const box=document.querySelector(`#boxes .box[data-i="${u.itemIndex}"]`);
   if(box){box.classList.remove("unsure");box.classList.add(human&&human.answer?"human":"aiguess");if(verdict==="not_litter")box.classList.add("notLitter");
     box.querySelector(".boxTag").textContent=human&&human.answer?answer:`AI guess: ${answer}`}
-  if(human&&human.answer)log(`← 200 · a person said: ${answer}`);
-  else{setState("human-reviewer","skipped · not paid","skipped");log(human&&human.skipped?"skipped · Coco uses the AI’s guess, pays nothing":"… nobody answered · Coco uses the AI’s guess, pays nothing")}
+  if(!(human&&human.answer))setState("human-reviewer",human&&human.skipped?"skipped · not paid":"no answer · not paid","skipped");
   setBtn("working");
 }
-function heroDone(){heroPhase(`Done. ${paidCount} skill${paidCount===1?"":"s"} paid.`);setBtn("done");setTimeout(()=>log("✓ done · nobody tapped Confirm"),1200)}
+function heroDone(){heroPhase(`Done. ${paidCount} skill${paidCount===1?"":"s"} paid.`);setBtn("done");}
 function heroError(m){
   $("scan").hidden=true;
   const failed=steps.find(x=>x.skill&&x.state==="err");if(failed)setState(failed.skill,"failed · not paid","failed");
   SKILLS_ORDER.forEach(k=>{const el=$("st-"+k);if(el.classList.contains("working"))setState(k,"failed · not paid","failed")});
-  heroPhase("Coco stopped.");log("✕ "+m);setBtn("error");
+  heroPhase("Coco stopped.");note(m);setBtn("error");
 }
-/* The cleanup plan, in a sheet that slides up */
-function openPlan(){$("sheetBody").innerHTML=$("result").innerHTML;openSheet()}
-function openSheet(){
-  const sh=$("sheet");
-  if(sh.hidden){lastFocus=document.activeElement;sh.hidden=false;$("hero").inert=true;document.querySelector(".wrap").inert=true;document.body.classList.add("noScroll")}
-  $("sheetTitle").focus();
+/* ---------- Patrol log: bar at the bottom → sheet (side panel on desktop) ---------- */
+const sheet=$("logSheet"),panel=$("sheetPanel"),bar=$("logBar");
+const motionMs=()=>reducedMotion()?0:320;
+function openSheet(then){
+  if(!sheet.hidden){if(then)then();return}
+  lastFocus=document.activeElement&&document.activeElement!==document.body?document.activeElement:bar;
+  sheet.hidden=false;bar.setAttribute("aria-expanded","true");
+  $("hero").inert=true;document.querySelector(".wrap").inert=true;bar.inert=true;document.body.classList.add("noScroll");
+  void panel.offsetWidth;sheet.classList.add("open");
+  $("logTitle").focus({preventScroll:true});
+  if(then)setTimeout(then,motionMs());
 }
 function closeSheet(){
-  const sh=$("sheet");if(sh.hidden)return;
-  sh.hidden=true;$("hero").inert=false;document.querySelector(".wrap").inert=false;document.body.classList.remove("noScroll");
-  if(lastFocus&&lastFocus.focus)lastFocus.focus();
+  if(sheet.hidden||!sheet.classList.contains("open"))return;
+  sheet.classList.remove("open");panel.style.transform="";bar.setAttribute("aria-expanded","false");
+  $("hero").inert=false;document.querySelector(".wrap").inert=false;bar.inert=false;document.body.classList.remove("noScroll");
+  setTimeout(()=>{if(!sheet.classList.contains("open"))sheet.hidden=true},motionMs());
+  (lastFocus&&lastFocus.isConnected&&!lastFocus.disabled?lastFocus:bar).focus({preventScroll:true});
 }
+function openPlan(){openSheet(()=>{const r=$("result");if(!r.hidden)r.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"start"})})}
+bar.onclick=()=>openSheet();
 $("sheetClose").onclick=closeSheet;
-$("sheet").addEventListener("click",e=>{if(e.target===$("sheet"))closeSheet()});
-$("sheet").addEventListener("keydown",e=>{
+sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet()});
+sheet.addEventListener("keydown",e=>{
   if(e.key==="Escape"){e.preventDefault();closeSheet();return}
   if(e.key!=="Tab")return;
-  const f=[...$("sheetPanel").querySelectorAll("button:not([disabled]),a[href],[tabindex='-1']")].filter(x=>x.offsetParent!==null);
+  const f=[...panel.querySelectorAll("button:not([disabled]),a[href],[tabindex='-1']")].filter(x=>x.offsetParent!==null);
   if(!f.length)return;const first=f[0],last=f[f.length-1];
   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
 });
+/* Drag the bar up to open; drag the top of the sheet down to close (phones) */
+{let y0=null,moved=false;
+  bar.addEventListener("pointerdown",e=>{y0=e.clientY;moved=false;try{bar.setPointerCapture(e.pointerId)}catch(_){}});
+  bar.addEventListener("pointermove",e=>{if(y0!=null&&y0-e.clientY>24&&!moved){moved=true;y0=null;openSheet()}});
+  bar.addEventListener("pointerup",()=>{y0=null});bar.addEventListener("pointercancel",()=>{y0=null});}
+{let y0=null,dy=0;const grab=$("sheetGrab");
+  grab.addEventListener("pointerdown",e=>{if(e.target.closest("button")||matchMedia("(min-width:900px)").matches)return;y0=e.clientY;dy=0;panel.classList.add("dragging");grab.setPointerCapture(e.pointerId)});
+  grab.addEventListener("pointermove",e=>{if(y0==null)return;dy=Math.max(0,e.clientY-y0);panel.style.transform=`translateY(${dy}px)`});
+  const end=()=>{if(y0==null)return;y0=null;panel.classList.remove("dragging");if(dy>90)closeSheet();else panel.style.transform=""};
+  grab.addEventListener("pointerup",end);grab.addEventListener("pointercancel",end);}
 
 function showResult(spot,items,plan){
   const nice=t=>t.replace(/_/g," ");

@@ -102,21 +102,11 @@
     <p class="small" id="msg" aria-live="polite" style="margin:0"></p>
   </section>
 
-  <!-- WHO PAYS WHOM -->
+  <!-- WHO GETS PAID: what each skill does and whose wallet it pays (prices and Coco's wallet are on the first screen) -->
   <section>
-    <h2>Who pays whom <small>every skill has its own wallet</small></h2>
-    <div class="flow">
-      <div class="wcard payer">
-        <span class="lbl">Coco's wallet · pays</span>
-        <div class="addr" id="cocoAddr">—</div>
-        <b class="mono" id="cocoBal">—</b><span class="small muted">USDC on devnet</span>
-        <div class="meter" id="budgetMeter"><i></i></div>
-        <span class="small muted" id="budgetTxt">Daily budget: 1 USDC</span>
-      </div>
-      <div class="arrow" aria-hidden="true">pays per use →</div>
-      <div class="skills" id="skillCards"></div>
-    </div>
-    <p class="small muted" style="margin:0">Coco never pays itself. Each skill is an independent service: it asks Coco for payment with HTTP <span class="mono">402</span>, Coco's wallet signs it on its own, and the USDC goes straight to the wallet of whoever made the skill. If today's budget runs out, Coco stops.</p>
+    <h2>Who gets paid <small>100% of each price goes to the skill’s maker</small></h2>
+    <div class="skills" id="skillCards"></div>
+    <p class="small muted" style="margin:0">Each skill is an independent service with its own wallet. It asks Coco for payment with HTTP <span class="mono">402</span>, Coco’s wallet signs on its own, and the USDC goes straight to that wallet. Coco never pays itself.</p>
   </section>
 
   <!-- NUMBERS -->
@@ -228,11 +218,6 @@ function renderStatus(){
   if(!busy&&btnMode==="idle"&&(why||/can’t patrol/.test($("heroNote").textContent)))note(why?why+". Coco can’t patrol right now.":"");
   renderWalletCard();
   if(!state)return;
-  $("cocoAddr").innerHTML=state.address?addrLink(state.address):"not set up";
-  $("cocoBal").textContent=state.usdcUnits==null?"—":usdc(state.usdcUnits);
-  const b=state.budget,p=Math.min(100,b.spentUnits/b.limitUnits*100);
-  $("budgetMeter").firstElementChild.style.width=p+"%";$("budgetMeter").classList.toggle("full",p>=100);
-  $("budgetTxt").textContent=`Today: ${usdc(b.spentUnits)} of ${usdc(b.limitUnits)} USDC budget`;
   const ph=state.photos;
   $("limits").textContent=`The AI costs real money: ${ph.perVisitor} photos per visitor a day (you've used ${ph.yours}), ${ph.limit} for everyone (${ph.today} used today).`;
   if(state.address){$("cocoTxs").href=addrUrl(state.address);$("cocoTxs").hidden=false}
@@ -262,7 +247,7 @@ function renderSkills(){
     return `<div class="wcard">
       <span class="lbl">${esc(s.name)} <span class="kind">${esc(s.kind)}</span></span>
       <span class="small muted">${esc(s.does)}</span>
-      <span class="small"><b class="mono">${usdc(s.price)} USDC</b> per use → ${ADDR.test(s.payTo)?addrLink(s.payTo):"<i>whoever answers</i>"}</span>
+      <span class="small">Paid to ${ADDR.test(s.payTo)?addrLink(s.payTo):"<i>the person who answers</i>"}</span>
       <span class="small muted mono">${st?`${st.calls} paid · ${usdc(st.units)} USDC earned`:""}</span>
     </div>`}).join("");
 }
@@ -590,7 +575,7 @@ function closeSheet(){
   if(sheet.hidden||!sheet.classList.contains("open"))return;
   sheet.classList.remove("open");panel.style.transform="";bar.setAttribute("aria-expanded","false");
   $("hero").inert=false;document.querySelector(".wrap").inert=false;bar.inert=false;document.body.classList.remove("noScroll");
-  setTimeout(()=>{if(!sheet.classList.contains("open"))sheet.hidden=true},motionMs());
+  if(!motionMs())sheet.hidden=true;else setTimeout(()=>{if(!sheet.classList.contains("open"))sheet.hidden=true},motionMs());
   (lastFocus&&lastFocus.isConnected&&!lastFocus.disabled?lastFocus:bar).focus({preventScroll:true});
 }
 function openPlan(){openSheet(()=>{const r=$("result");if(!r.hidden)r.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"start"})})}

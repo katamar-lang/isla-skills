@@ -86,12 +86,9 @@ input.amt{width:90px}
 .bin{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--accent-soft)}
 
 /* who pays whom */
-.flow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,3fr);gap:12px;align-items:center}
 .skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .wcard{background:rgba(255,255,255,.6);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:4px;min-width:0;align-self:stretch}
-.wcard.payer{border:1px solid var(--gold)}
 .wcard b{font-size:18px;font-weight:500}
-.arrow{font-family:var(--mono);font-size:12px;color:var(--goldInk);text-align:center}
 .meter{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;width:0;background:var(--green);transition:width .8s ease-out}
 .meter.full i{background:var(--err)}
@@ -110,7 +107,7 @@ input.amt{width:90px}
 .answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .answers button{padding:12px 8px;font-size:15px}
 
-@media (max-width:1000px){.grid.main,.grid.two{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow{justify-self:center}}
+@media (max-width:1000px){.grid.main,.grid.two{grid-template-columns:1fr}}
 @media (max-width:640px){.skills{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
 
 
@@ -227,18 +224,19 @@ p.toast::after{content:none}
 .lbDot.done{background:var(--green)}
 .lbDot.err{background:var(--err)}
 body.noScroll{overflow:hidden}
-.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,27,45,0);transition:background .3s}
+/* phones: a card centred on the screen */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));background:rgba(20,27,45,0);transition:background .3s}
 .sheet.open{background:rgba(20,27,45,.38)}
-.sheetPanel{width:100%;max-width:640px;height:85vh;height:85dvh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;border:1px solid var(--glassLine);border-bottom:0;background:rgba(246,247,253,.86);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 -10px 40px rgba(20,27,45,.2);transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
-.sheet.open .sheetPanel{transform:translateY(0)}
+.sheetPanel{width:100%;max-width:560px;max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;border-radius:20px;border:1px solid var(--glassLine);background:rgba(246,247,253,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 20px 50px rgba(20,27,45,.28);opacity:0;transform:translateY(24px) scale(.97);transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .25s}
+.sheet.open .sheetPanel{opacity:1;transform:none}
 .sheetPanel.dragging{transition:none}
-.sheetGrab{padding:8px 16px 0;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
-.sheetGrab .handle{display:block;margin:0 auto 8px}
+.sheetGrab{padding:14px 16px 0;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+.sheetGrab .handle{display:none}
 .sheetHead{display:flex;gap:12px;align-items:center;justify-content:space-between}
 .sheetHead h2{font-size:20px;outline:none;display:block}
 .sheetHead .lbSum{display:block}
 .sheetClose{min-width:72px}
-.sheetScroll{flex:1;overflow:auto;overscroll-behavior:contain;padding:12px 16px max(20px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.sheetScroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px 16px max(20px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
 #result{border-top:1px solid var(--line);padding-top:10px}
 
 /* more photos (below the first screen) */
@@ -263,7 +261,8 @@ body.noScroll{overflow:hidden}
   .logBar{left:auto;right:24px;bottom:16px;width:380px;height:var(--bar);border-radius:16px;border-bottom:1px solid var(--glassLine);padding:6px 16px;grid-template-rows:1fr}
   .logBar .handle{display:none}
   .sheet{justify-content:flex-end;align-items:stretch}
-  .sheetPanel{height:100%;max-width:440px;border-radius:20px 0 0 20px;border-bottom:1px solid var(--glassLine);transform:translateX(100%)}
+  .sheet{padding:0}
+  .sheetPanel{height:100%;max-height:none;max-width:440px;border-radius:20px 0 0 20px;opacity:1;transform:translateX(100%)}
   .sheet.open .sheetPanel{transform:translateX(0)}
   .sheetGrab .handle{display:none}
   .sheetGrab{padding-top:16px;cursor:default}

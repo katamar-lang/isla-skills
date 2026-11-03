@@ -452,7 +452,7 @@ async function patrol(){
     heroDone();
     // Villa photo: always open the villa simulation. Coco goes to the room the photo shows,
     // picks the litter up if there is any, or checks the room and says it is clean.
-    if(window.VillaSim&&VillaSim.isVilla(spot.place)){lastVilla={photo:run.photo,place:spot.place,reason:spot.placeReason,items};VillaSim.open(lastVilla)}
+    if(window.VillaSim&&VillaSim.isVilla(spot.place)){lastVilla={photo:run.photo,place:spot.place,reason:spot.placeReason,items,payments:steps.filter(x=>x.paid&&x.skill).map(x=>({skill:x.skill,units:x.paid.units,sig:x.paid.sig}))};VillaSim.open(lastVilla)}
   }catch(e){
     const m=e instanceof Stop?e.message:"Something went wrong: "+(e&&e.message||e);
     run={...run,running:false,error:m};

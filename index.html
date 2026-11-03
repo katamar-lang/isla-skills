@@ -168,6 +168,7 @@
 <script src="web3.min.js"></script>
 <script src="wallet-adapter.min.js"></script>
 <script src="wallet.js"></script>
+<script src="villa-sim.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -362,6 +363,7 @@ async function buy(skillId,body,step,extra={}){
   return r.json.result;
 }
 
+let lastVilla=null;
 async function patrol(){
   if(busy)return;
   if(stream&&!$("cam").hidden){photo=shrink($("cam"));$("photoImg").src=photo;stopCam()}
@@ -406,6 +408,8 @@ async function patrol(){
     addStep({title:"Done",state:"ok",html:"Coco paid each skill on its own. Nobody tapped Confirm."});
     showResult(spot,items,plan);
     heroDone();
+    // Villa photo: open the villa simulation (Coco goes to the room the photo shows and picks the item up)
+    if(window.VillaSim&&VillaSim.isVilla(spot.place)&&items.length){lastVilla={photo:run.photo,place:spot.place,reason:spot.placeReason,items};VillaSim.open(lastVilla)}
   }catch(e){
     const m=e instanceof Stop?e.message:"Something went wrong: "+(e&&e.message||e);
     run={...run,running:false,error:m};
@@ -577,8 +581,10 @@ function showResult(spot,items,plan){
     ${items.length?`<ul class="found">${items.map(i=>`<li><b>${i.count} × ${esc(i.label)}</b> <span class="muted">${esc(nice(i.type))}${i.where?" · "+esc(i.where):""}</span></li>`).join("")}</ul>`:'<p class="small muted">No litter. This stretch of beach is clean.</p>'}
     ${plan.steps.length?`<h3>Cleanup plan</h3><ol class="plan">${plan.steps.map(s=>`<li>${esc(s.action)} <span class="bin">${esc(s.bin)}</span>${s.note?` <span class="muted small">${esc(s.note)}</span>`:""}</li>`).join("")}</ol>
     <p class="small muted">About ${plan.minutes} min · ${plan.recyclablePercent}% recyclable · bins follow Brazil's recycling colours.</p>`:""}
-    ${spot.isBeach?"":'<p class="small muted">This doesn\'t look like a beach, but Coco checked it anyway.</p>'}`;
+    ${spot.isBeach||(window.VillaSim&&VillaSim.isVilla(spot.place))?"":'<p class="small muted">This doesn\'t look like a beach, but Coco checked it anyway.</p>'}
+    ${window.VillaSim&&VillaSim.isVilla(spot.place)&&items.length?'<p><button type="button" class="ghost" id="villaAgain">Watch Coco in the villa</button></p>':""}`;
   $("result").hidden=false;
+  const va=$("villaAgain");if(va)va.onclick=()=>{if(lastVilla)VillaSim.open(lastVilla)};
 }
 
 /* ---------- top up Coco from your wallet ---------- */

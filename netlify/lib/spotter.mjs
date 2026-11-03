@@ -5,9 +5,13 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import * as z from "zod/v4";
 
 export const MODEL = "claude-haiku-5-5";
+/* Where the photo was taken: the beach, a room of the IslandDAO V5 villa (for the villa simulation), or somewhere else. */
+export const PLACES = ["beach", "pool_terrace", "dining", "kitchen", "living", "reception", "tv_room", "billiards", "garden", "other"];
 const TYPES = ["plastic_bottle", "plastic_bag", "cup_or_straw", "food_wrapper", "cigarette_butt", "can", "glass", "fishing_gear_or_rope", "styrofoam", "paper_or_cardboard", "other"];
 export const SpotSchema = z.object({
   isBeach: z.boolean().describe("true if the photo shows a beach, sand, shore or similar outdoor ground"),
+  place: z.enum(PLACES).describe("Where the photo was taken: 'beach', one of the villa rooms, or 'other'"),
+  placeReason: z.string().describe("One short sentence with the visual clues for the place, e.g. 'Red billiards table and cue rack'"),
   summary: z.string().describe("One short sentence for the robot's log"),
   items: z.array(z.object({
     type: z.enum(TYPES),
@@ -36,6 +40,16 @@ Look at the photo and list the litter a cleanup robot should pick up: type, a sh
 Natural things (shells, seaweed, wood, stones, footprints, animals) are not litter.
 If you are genuinely unsure whether something is litter or natural (for example a white plastic fragment vs a shell), mark it with low confidence and fill "unsure" with one short question a person can answer with one tap. Otherwise set "unsure" to null.
 If the photo is not a beach or shore, set isBeach to false and still list any litter you see.
+Coco also works inside the IslandDAO V5 villa. If the photo was taken there, set "place" to the room it shows:
+- pool_terrace: outdoor pool deck, blue sun loungers, wooden gazebo, black BBQ grill, beige tiles, white columns, round wicker sofa, palm trees
+- dining: round white dining table with wooden chairs, glass walls looking at the pool, white round columns
+- kitchen: white kitchen, long island with wooden high stools, built-in grill, steel fridge, cream cabinets
+- living: bright living room, cream L-shaped sofa, blue abstract paintings, TV on a white wall, wooden coffee table, glass doors to the lawn
+- reception: entrance hall, marble floor with a compass-rose inlay, white door with a digital lock, spiral staircase, wooden console with a tablet and printer, steps
+- tv_room: black leather sofa, glossy black coffee table, black-and-white geometric rug, black TV stand, tall dark vases, sheer white curtains, glass doors to the garden
+- billiards: red billiards table, cue rack, round mirrors, long wooden coworking table with laptops, shelf with fitness gear
+- garden: lawn and tall hedges, outdoor wooden work table under a white tent
+Use "beach" for a beach or shore and "other" for anywhere else. Inside the villa, things in use (cables plugged in, bags, towels, laptops) are not litter; discarded cups, bottles, cans, wrappers and paper are.
 Never describe people. Keep labels short.`;
 
 let client = null;
@@ -55,7 +69,7 @@ export async function spotLitter(base64, mediaType) {
     output_config: { effort: "low", format: zodOutputFormat(SpotSchema) },
     messages: [{ role: "user", content: [
       { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-      { type: "text", text: "Beach patrol photo. What litter is here?" }
+      { type: "text", text: "Patrol photo (a beach, or the IslandDAO V5 villa). Where is it, and what litter is here?" }
     ] }]
   });
   if (response.stop_reason === "refusal") throw Object.assign(new Error("The AI declined to look at this photo"), { code: "refusal" });
@@ -95,5 +109,6 @@ export function clean(out) {
     const i = items.findIndex(x => x.confidence === "low");
     if (i >= 0) unsure = { itemIndex: i, question: `Is the ${items[i].label} (${items[i].where}) litter?`, litterOption: "Yes, litter", notLitterOption: "No, natural", aiGuess: "litter" };
   }
-  return { isBeach: !!out.isBeach, summary: String(out.summary || "").slice(0, 160), items, unsure };
+  const place = PLACES.includes(out.place) ? out.place : (out.isBeach ? "beach" : "other");
+  return { isBeach: !!out.isBeach, place, placeReason: String(out.placeReason || "").slice(0, 140), summary: String(out.summary || "").slice(0, 160), items, unsure };
 }

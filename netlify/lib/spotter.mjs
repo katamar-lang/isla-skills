@@ -1,4 +1,4 @@
-/* Litter Spotter: Claude (Haiku, with vision) looks at one beach photo.
+/* Litter Spotter: Claude (Haiku, with vision) looks at one photo (a room of the IslandDAO V5 villa, or anywhere).
    The API key is the Netlify environment variable ANTHROPIC_API_KEY, used only here, on the server. */
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
@@ -35,7 +35,7 @@ export const SpotSchema = z.object({
   }).nullable().describe("Fill only when at least one item has low confidence; otherwise null")
 });
 
-const SYSTEM = `You are the eyes of Coco, a beach-cleaning robot in Florianópolis, Brazil.
+const SYSTEM = `You are the eyes of Coco, a cleaning robot that works in the IslandDAO V5 villa in Florianópolis, Brazil.
 Look at the photo and list the litter a cleanup robot should pick up: type, a short label, how many, rough position, a rough box around it, and your confidence.
 Natural things (shells, seaweed, wood, stones, footprints, animals) are not litter.
 If you are genuinely unsure whether something is litter or natural (for example a white plastic fragment vs a shell), mark it with low confidence and fill "unsure" with one short question a person can answer with one tap. Otherwise set "unsure" to null.
@@ -69,7 +69,7 @@ export async function spotLitter(base64, mediaType) {
     output_config: { effort: "low", format: zodOutputFormat(SpotSchema) },
     messages: [{ role: "user", content: [
       { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-      { type: "text", text: "Patrol photo (a beach, or the IslandDAO V5 villa). Where is it, and what litter is here?" }
+      { type: "text", text: "Photo for Coco (usually a room of the IslandDAO V5 villa). Where is it, and what litter is here?" }
     ] }]
   });
   if (response.stop_reason === "refusal") throw Object.assign(new Error("The AI declined to look at this photo"), { code: "refusal" });

@@ -149,6 +149,8 @@ body{padding-bottom:calc(var(--bar) + 24px + env(safe-area-inset-bottom,0px))}
 /* photo */
 .photoWrap{flex:1;min-width:0;min-height:96px;max-height:340px;display:flex;justify-content:center;align-items:center;border-radius:14px;overflow:hidden}
 .photoFrame{position:relative;height:100%;aspect-ratio:var(--ar,3 / 2);max-width:100%}
+.photoEmpty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center;color:var(--muted);font-size:13px;line-height:1.35;max-width:240px}
+.photoEmpty svg{color:var(--ink);opacity:.75}
 .photoFrame.wide{height:auto;width:100%}
 .photoFrame img,.photoFrame video{display:block;width:100%;height:100%;object-fit:cover}
 .scan{position:absolute;left:0;right:0;top:0;height:2px;background:var(--gold);box-shadow:0 0 12px 2px rgba(232,162,31,.6);animation:scan 1.6s ease-in-out infinite alternate}

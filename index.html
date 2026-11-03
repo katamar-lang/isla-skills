@@ -38,27 +38,31 @@
       <div class="heroText">
         <div id="heroIntro" class="swap">
           <h1 id="heroTitle">The skill store for robots.</h1>
-          <p class="heroLede">Robots call skills as APIs and pay per use in USDC on Solana. Watch Coco, a simulated robot, do it.</p>
+          <p class="heroLede">Robots call skills as APIs and pay per use in USDC on Solana. Snap a room of the villa and watch Coco, a simulated robot, find the litter and pay each skill to clean it up.</p>
         </div>
         <div id="heroLive" class="swap" hidden>
-          <p class="eyebrow">Beach Patrol · Live</p>
+          <p class="eyebrow">Clean Sweep · Live</p>
           <p id="heroPhase" class="heroPhase">Litter Spotter is looking…</p>
         </div>
         <p class="heroNote" id="heroNote" role="status" hidden></p>
       </div>
       <p class="walletLine" id="walletCard"><span class="wDot" aria-hidden="true"></span>Coco’s wallet <b id="wBal">—</b> USDC</p>
       <div class="heroCta">
-        <button type="button" class="go big" id="heroBtn">Run Beach Patrol</button>
-        <button type="button" class="big ghost" id="heroAgain" hidden>Run it again</button>
-        <p class="heroCap" id="heroCap">No wallet needed. Coco pays from its own devnet wallet. <button type="button" class="linkBtn" id="ownPhoto">or use your own photo</button></p>
+        <button type="button" class="go big" id="heroBtn">Take a photo</button>
+        <button type="button" class="big ghost" id="heroAgain" hidden>Take another photo</button>
+        <input id="file" type="file" accept="image/*" capture="environment" aria-label="Take a photo of a room" hidden>
+        <p class="heroCap" id="heroCap">No wallet needed: Coco pays from its own devnet wallet. <span id="limits">5 photos per visitor a day.</span></p>
       </div>
     </div>
     <div class="heroRight">
       <div class="heroStage">
         <div class="photoWrap glass">
-          <div class="photoFrame" id="photoFrame">
-            <img id="photoImg" alt="Beach photo Coco will check">
-            <video id="cam" playsinline muted hidden></video>
+          <div class="photoEmpty" id="photoEmpty">
+            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg>
+            <span>Take a photo of any room in the villa. Coco finds the room and the litter.</span>
+          </div>
+          <div class="photoFrame" id="photoFrame" hidden>
+            <img id="photoImg" alt="The photo Coco will check">
             <div class="scan" id="scan" hidden></div>
             <div class="boxes" id="boxes" aria-hidden="true"></div>
           </div>
@@ -84,19 +88,6 @@
 <div class="toasts" id="toasts"></div>
 
 <div class="wrap">
-  <!-- MORE PHOTOS -->
-  <section id="photos">
-    <h2>Try another photo</h2>
-    <div class="row">
-      <button id="pickPhoto" type="button">Take or upload a photo</button>
-      <input id="file" type="file" accept="image/*" capture="environment" aria-label="Take or upload a photo" hidden>
-      <button id="camBtn" type="button">Desk robot: use this camera</button>
-    </div>
-    <div class="row small" id="samples" hidden><span class="muted">Or try a beach:</span></div>
-    <p class="small muted" id="limits" style="margin:0">The AI costs real money, so each visitor gets 5 photos a day and Coco analyzes up to 100 a day in total.</p>
-    <p class="small" id="msg" aria-live="polite" style="margin:0"></p>
-  </section>
-
   <!-- NUMBERS -->
   <section>
     <h2>Live usage <small>read from Solana devnet, not from this browser</small></h2>
@@ -155,7 +146,7 @@
     </div>
     <div class="sheetScroll" id="sheetScroll">
       <ol class="timeline" id="timeline" aria-live="polite">
-        <li class="step idle" data-static><b>1 · Photo</b><span class="muted">Coco looks at the beach.</span></li>
+        <li class="step idle" data-static><b>1 · Photo</b><span class="muted">Coco looks at the room.</span></li>
         <li class="step idle" data-static><b>2 · Litter Spotter <span class="kind">AI</span></b><span class="muted">Answers <span class="mono">402 Payment Required</span>. Coco's wallet pays 0.01 USDC. It lists the litter.</span></li>
         <li class="step idle" data-static><b>3 · Human Reviewer <span class="kind">Person</span></b><span class="muted">Only if the AI isn't sure. A real person has 20 seconds to answer and is paid 0.005 USDC.</span></li>
         <li class="step idle" data-static><b>4 · Cleanup Planner <span class="kind">Planner</span></b><span class="muted">Paid 0.002 USDC. Turns the list into a cleanup plan.</span></li>
@@ -181,7 +172,7 @@ const txLink=(s,t="Explorer ↗")=>SIG.test(s||"")?`<a class="tap" href="${txUrl
 const addrLink=a=>ADDR.test(a||"")?`<a class="tap" href="${addrUrl(a)}" target="_blank" rel="noopener" aria-label="Solana Explorer: ${a}">${short(a)}</a>`:esc(a||"—");
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const W=window.solanaWeb3, IW=window.IslaWallet;
-let state=null,photo=null,busy=false,stream=null;
+let state=null,photo=null,busy=false;
 
 /* ---------- server status ---------- */
 async function api(path,opts={}){
@@ -208,7 +199,7 @@ function renderStatus(){
   renderWalletCard();
   if(!state)return;
   const ph=state.photos;
-  $("limits").textContent=`The AI costs real money: ${ph.perVisitor} photos per visitor a day (you've used ${ph.yours}), ${ph.limit} for everyone (${ph.today} used today).`;
+  $("limits").textContent=`${ph.perVisitor} photos per visitor a day (you’ve used ${ph.yours}).`;
   if(state.address){$("cocoTxs").href=addrUrl(state.address);$("cocoTxs").hidden=false}
   // Say exactly who settles the payments: the remote facilitator or this site's own server (plan B)
   const f=String(state.facilitator||"");
@@ -238,7 +229,7 @@ function renderWalletCard(){
     const step=now=>{const k=Math.min(1,(now-t0)/800);$("wBal").textContent=usdc3(from+(bal-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 }
 
-/* ---------- photo: upload, camera, samples ---------- */
+/* ---------- photo: taken with the phone camera (or chosen from files on a computer) ---------- */
 function shrink(src){ // max 1024 px JPEG, so the photo is small and fast
   const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight,k=Math.min(1,1024/Math.max(w,h));
   const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
@@ -255,48 +246,20 @@ function framePhoto(w,h){if(w&&h){photoAr=w/h;$("photoFrame").style.setProperty(
 function fitPhoto(){const wrap=$("photoFrame").parentElement,wide=photoAr>wrap.clientWidth/Math.max(1,wrap.clientHeight);$("photoFrame").classList.toggle("wide",wide)}
 addEventListener("resize",fitPhoto);
 function setPhoto(dataUrl,{start}={}){
-  photo=dataUrl;$("photoImg").src=dataUrl;$("photoImg").hidden=false;$("cam").hidden=true;$("msg").textContent="";
+  photo=dataUrl;$("photoImg").src=dataUrl;$("photoFrame").hidden=false;$("photoEmpty").hidden=true;
   const probe=new Image();probe.onload=()=>framePhoto(probe.naturalWidth,probe.naturalHeight);probe.src=dataUrl;
   if(!busy)heroReady();
   if(start&&!busy)patrol(); // choosing a photo starts the patrol right away, at the top of the page
 }
 $("file").onchange=e=>{
-  const f=e.target.files[0];if(!f)return;stopCam();
+  const f=e.target.files[0];if(!f)return;
   const img=new Image();img.onload=()=>{setPhoto(shrink(img),{start:true});URL.revokeObjectURL(img.src)};
-  img.onerror=()=>{$("msg").textContent="That file isn't a photo Coco can read. Try a JPEG or PNG.";note("That file isn’t a photo Coco can read. Try a JPEG or PNG.")};
+  img.onerror=()=>{note("That file isn’t a photo Coco can read. Try a JPEG or PNG.")};
   img.src=URL.createObjectURL(f);
   e.target.value="";
 };
-function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("cam").hidden=true;$("photoImg").hidden=false;$("camBtn").textContent="Desk robot: use this camera"}
-$("camBtn").onclick=async()=>{
-  if(stream)return stopCam();
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
-    $("cam").srcObject=stream;await $("cam").play();
-    $("cam").hidden=false;$("photoImg").hidden=true;framePhoto($("cam").videoWidth,$("cam").videoHeight);
-    $("camBtn").textContent="Stop camera";
-    $("msg").textContent="This camera is Coco's eyes now. Point it at the scene and tap Run Beach Patrol.";
-    toTop();note("This camera is Coco’s eyes now. Tap Run Beach Patrol.","info");
-  }catch(e){$("msg").textContent="Couldn't open the camera. Allow camera access, or upload a photo instead."}
-};
-/* Sample photos in assets/samples/: list only files that exist (no 404s). */
-const SAMPLES=[
-  {file:"beach-1.jpg",alt:"Beach with a plastic bag, a plastic bottle and other litter on the sand"},
-  {file:"beach-2.jpg",alt:"Shore with a plastic bottle, plastic plates, a cup and plastic bags on the sand"},
-  {file:"beach-3.jpg",alt:"Wide sandy beach with a single metal bucket half buried in the sand"}
-];
-SAMPLES.forEach(x=>{
-  const b=document.createElement("button");b.type="button";b.className="thumbBtn";b.setAttribute("aria-label","Use this sample photo: "+x.alt);
-  const img=new Image();img.alt=x.alt;img.className="thumb";
-  img.onload=()=>{$("samples").hidden=false};
-  img.src="assets/samples/"+x.file;
-  b.appendChild(img);b.onclick=()=>{stopCam();setPhoto(shrink(img),{start:true})};
-  $("samples").appendChild(b);
-});
-$("pickPhoto").onclick=()=>$("file").click();
-$("ownPhoto").onclick=()=>$("file").click();
-// The stage starts with the first sample beach, ready to run
-{const first=new Image();first.onload=()=>{if(!photo)setPhoto(shrink(first))};first.src="assets/samples/"+SAMPLES[0].file}
+/* Phones open the camera; computers open a file picker */
+const touch=matchMedia("(pointer: coarse)").matches;
 
 /* ---------- timeline ---------- */
 let steps=[];
@@ -366,9 +329,8 @@ async function buy(skillId,body,step,extra={}){
 let lastVilla=null;
 async function patrol(){
   if(busy)return;
-  if(stream&&!$("cam").hidden){photo=shrink($("cam"));$("photoImg").src=photo;stopCam()}
-  if(!photo){$("msg").textContent="Take or upload a photo first.";note("Choose a photo first.");return}
-  busy=true;$("result").hidden=true;$("msg").textContent="";
+  if(!photo){$("file").click();return}
+  busy=true;$("result").hidden=true;
   steps=[];run={running:true,photo};
   heroStart();
   addStep({title:"1 · Photo",state:"ok",html:`<img class="mini" src="${photo}" alt="">`});
@@ -415,7 +377,6 @@ async function patrol(){
     run={...run,running:false,error:m};
     addStep({title:"Coco stopped",state:"err",html:esc(m)});
     heroError(m);
-    $("msg").textContent=m;
     if(!(e instanceof Stop))console.error(e);
   }
   busy=false;renderBar();
@@ -485,16 +446,17 @@ function toast(text,sig){
 }
 function setBtn(mode){
   btnMode=mode;const b=$("heroBtn"),again=$("heroAgain");
-  const L={idle:"Run Beach Patrol",working:"Coco is working…",waiting:"Skip, use the AI’s guess",done:"See the cleanup plan",error:"Try again"};
+  const L={idle:touch?"Take a photo":"Choose a photo",working:"Coco is working…",waiting:"Skip, use the AI’s guess",done:"See the cleanup plan",error:"Try again"};
   b.textContent=L[mode];b.disabled=mode==="working";b.classList.toggle("go",mode!=="waiting");b.classList.toggle("ghost",mode==="waiting");
   again.hidden=mode!=="done";$("heroCap").hidden=!(mode==="idle");
 }
 $("heroBtn").onclick=()=>{
-  if(btnMode==="idle"||btnMode==="error")patrol();
+  if(btnMode==="idle")$("file").click(); // a new photo starts the patrol
+  else if(btnMode==="error")patrol(); // try the same photo again
   else if(btnMode==="waiting"){skipAsked=true;document.querySelectorAll("[data-skip]").forEach(x=>x.disabled=true);$("heroBtn").disabled=true}
   else if(btnMode==="done")openPlan();
 };
-$("heroAgain").onclick=()=>{if(!busy)patrol()};
+$("heroAgain").onclick=()=>{if(!busy)$("file").click()};
 function heroReady(){ // a photo is in place and nothing is running
   if(btnMode!=="working"&&btnMode!=="waiting"){$("heroIntro").hidden=false;$("heroLive").hidden=true;$("scan").hidden=true;SKILLS_ORDER.forEach(k=>{setRing(k,false);setState(k,"ready")});paidTotal=0;animateTotal();$("boxes").innerHTML="";setBtn("idle");note("")}
 }
@@ -578,10 +540,9 @@ sheet.addEventListener("keydown",e=>{
 function showResult(spot,items,plan){
   const nice=t=>t.replace(/_/g," ");
   $("result").innerHTML=`<h3>What Coco found</h3>
-    ${items.length?`<ul class="found">${items.map(i=>`<li><b>${i.count} × ${esc(i.label)}</b> <span class="muted">${esc(nice(i.type))}${i.where?" · "+esc(i.where):""}</span></li>`).join("")}</ul>`:'<p class="small muted">No litter. This stretch of beach is clean.</p>'}
+    ${items.length?`<ul class="found">${items.map(i=>`<li><b>${i.count} × ${esc(i.label)}</b> <span class="muted">${esc(nice(i.type))}${i.where?" · "+esc(i.where):""}</span></li>`).join("")}</ul>`:'<p class="small muted">No litter here. This spot is clean.</p>'}
     ${plan.steps.length?`<h3>Cleanup plan</h3><ol class="plan">${plan.steps.map(s=>`<li>${esc(s.action)} <span class="bin">${esc(s.bin)}</span>${s.note?` <span class="muted small">${esc(s.note)}</span>`:""}</li>`).join("")}</ol>
     <p class="small muted">About ${plan.minutes} min · ${plan.recyclablePercent}% recyclable · bins follow Brazil's recycling colours.</p>`:""}
-    ${spot.isBeach||(window.VillaSim&&VillaSim.isVilla(spot.place))?"":'<p class="small muted">This doesn\'t look like a beach, but Coco checked it anyway.</p>'}
     ${window.VillaSim&&VillaSim.isVilla(spot.place)&&items.length?'<p><button type="button" class="ghost" id="villaAgain">Watch Coco in the villa</button></p>':""}`;
   $("result").hidden=false;
   const va=$("villaAgain");if(va)va.onclick=()=>{if(lastVilla)VillaSim.open(lastVilla)};
@@ -628,7 +589,7 @@ $("topUp").onclick=async()=>{
   $("topUp").disabled=false;
 };
 
-renderWallet();loadStatus();loadStats();IW.connectSilently();
+setBtn("idle");renderWallet();loadStatus();loadStats();IW.connectSilently();
 setInterval(loadStatus,30000);setInterval(loadStats,30000);
 </script>
 </body>

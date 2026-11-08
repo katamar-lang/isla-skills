@@ -331,6 +331,8 @@ body.noScroll{overflow:hidden}
 .cwLbl{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#C9CEDA}
 .cwBal{font:500 14px var(--mono);color:#C9CEDA}
 .cwBal b{font:600 36px var(--mono);letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
+.cwWarn{margin:0;display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(242,196,106,.12);border:1px solid rgba(242,196,106,.45);color:#F7D58F;font:500 12.5px/1.35 var(--body)}
+.cwWarn svg{flex:none;margin-top:1px}
 .cwAddr{font:12px var(--mono);color:#F2C46A;text-decoration:none;min-height:0;padding:4px 0}
 .cwMeter{height:6px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
 .cwMeter i{display:block;height:100%;width:0;background:var(--gold);transition:width .8s ease}

@@ -22,7 +22,7 @@ Pitch: "Robots are learning new skills through software, but there's no way to p
 - **The owner has no money for paid APIs.** Litter Spotter needs an AI key: ask the hackathon organizers for credits, or use a free tier (decision pending).
 - Everything runs on **Solana devnet** (test USDC).
 
-Both pages are full HTML documents: `<!doctype html>`, `<html lang="en">`, a `<head>` with the viewport meta (`width=device-width, initial-scale=1, viewport-fit=cover`; without it phones lay the page out at 980 px) and Open Graph / Twitter tags (`og:image` = absolute URL of `assets/cover.png`, `twitter:card` = `summary_large_image`). Links and buttons are at least 44 px tall (`a.tap`). Checked at 375 and 320 px with Playwright (iPhone emulation, `isMobile`).
+Both pages are full HTML documents: `<!doctype html>`, `<html lang="en">`, a `<head>` with the viewport meta (`width=device-width, initial-scale=1, viewport-fit=cover`; without it phones lay the page out at 980 px) and Open Graph / Twitter tags (`og:image` = absolute URL of `assets/cover.png?v=2`, `twitter:card` = `summary_large_image`; X and other apps cache the preview image by URL for days, so when the cover changes, bump `?v=` in both pages' `og:image` and `twitter:image`). Links and buttons are at least 44 px tall (`a.tap`). Checked at 375 and 320 px with Playwright (iPhone emulation, `isMobile`).
 
 ## How the code is organised
 

@@ -22,6 +22,6 @@ jobs:
         run: |
           npm ci
           mkdir -p public
-          cp index.html review.html style.css wallet.js villa-sim.js wallet-adapter.min.js web3.min.js favicon.png apple-touch-icon.png _redirects public/
-          cp -r assets public/
+          cp index.html review.html style.css wallet.js villa-sim.js wallet-adapter.min.js web3.min.js favicon.png apple-touch-icon.png _redirects _headers robots.txt sitemap.xml llms.txt index.md review.md openapi.json public/
+          cp -r assets .well-known public/
           npx --yes netlify-cli@27.16.2 deploy --prod --no-build --dir=public --functions=netlify/functions --site="$NETLIFY_SITE_ID" --message "Deploy from GitHub ${GITHUB_SHA::7}"

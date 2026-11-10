@@ -1,0 +1,51 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json",
+  "version": "1.0",
+  "name": "isla-skills",
+  "title": "Isla Skills",
+  "description": "Read-only MCP server for Isla Skills, an app store for robot skills paid per use in devnet USDC on Solana with x402.",
+  "websiteUrl": "https://isla-skills-dao-2b40fb.netlify.app/",
+  "serverInfo": {
+    "name": "isla-skills",
+    "title": "Isla Skills",
+    "version": "1.0.0"
+  },
+  "protocolVersion": "2025-06-18",
+  "transport": {
+    "type": "streamable-http",
+    "endpoint": "https://isla-skills-dao-2b40fb.netlify.app/mcp"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://isla-skills-dao-2b40fb.netlify.app/mcp"
+    }
+  ],
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    }
+  },
+  "authentication": {
+    "required": false
+  },
+  "tools": [
+    {
+      "name": "list_skills",
+      "description": "All skills: id, kind, what it does, price, payout wallet"
+    },
+    {
+      "name": "get_skill",
+      "description": "One skill, its endpoint, request body and the x402 steps to pay for it"
+    },
+    {
+      "name": "get_coco_wallet",
+      "description": "Robot #1 Coco's devnet wallet, balance and daily budget"
+    },
+    {
+      "name": "get_usage_stats",
+      "description": "Usage read from Solana devnet"
+    }
+  ],
+  "documentation": "https://isla-skills-dao-2b40fb.netlify.app/llms.txt"
+}

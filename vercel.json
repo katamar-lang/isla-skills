@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "mkdir -p public && cp index.html review.html style.css wallet.js villa-sim.js wallet-adapter.min.js web3.min.js favicon.png apple-touch-icon.png robots.txt sitemap.xml llms.txt index.md review.md openapi.json public/ && cp -r assets .well-known public/",
+  "buildCommand": "mkdir -p public && cp index.html review.html style.css wallet.js villa-sim.js wallet-adapter.min.js web3.min.js favicon.png apple-touch-icon.png public/ && cp -r assets public/",
   "outputDirectory": "public",
   "cleanUrls": true,
   "rewrites": [

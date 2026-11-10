@@ -18,7 +18,7 @@ Pitch: "Robots are learning new skills through software, but there's no way to p
 
 **Nothing on the page may be false.** There is no community vote and no 5% community share anymore (both removed Oct 31); 100% of each price goes to the skill's maker.
 
-- Live demo: https://isla-skills-dao-2b40fb.netlify.app (reviewers: `/review`). **Hosting: Netlify** (the owner's team is on a paid Netlify plan since Nov 1, 2026). The code also runs on Vercel (free) as a fallback: `api/router.mjs` + `vercel.json` + Upstash Redis.
+- Live demo: https://isla-skills-dao-2b40fb.netlify.app (reviewers: `/review`). **Link to share** (X, the submission, messages): **https://isla-skills-dao-2b40fb.netlify.app/?v=2**. X keeps the old link card for the plain URL ("The community robot… Vote on skills · 6 votes", false since Oct 31); the `?v=2` URL makes it read the current card. If the cover changes again, bump both the share link and `og:image` to `?v=3`. **Hosting: Netlify** (the owner's team is on a paid Netlify plan since Nov 1, 2026). The code also runs on Vercel (free) as a fallback: `api/router.mjs` + `vercel.json` + Upstash Redis.
 - **The owner has no money for paid APIs.** Litter Spotter needs an AI key: ask the hackathon organizers for credits, or use a free tier (decision pending).
 - Everything runs on **Solana devnet** (test USDC).
 

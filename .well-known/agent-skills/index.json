@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "isla-skills",
+      "type": "skill-md",
+      "description": "Call and pay robot skills on Isla Skills (an x402 skill store on Solana devnet): find litter in a photo of a room, ask a person when the AI is unsure, turn a litter list into a cleanup plan.",
+      "url": "/.well-known/agent-skills/isla-skills/SKILL.md",
+      "digest": "sha256:4b09fa9e09f3ed2812de53e6c976061734618d6a3cba98f5e25a8f551ee6c3b5"
+    }
+  ]
+}

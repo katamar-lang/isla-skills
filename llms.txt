@@ -1,0 +1,39 @@
+# Isla Skills
+
+> An app store for robot skills. Each skill is a service a robot (or any AI agent) calls over HTTP and pays per use, in USDC on Solana, with the x402 protocol. No human approves the payment. Skills come from AI models and from people. Runs on Solana devnet only (test USDC): never send real money.
+
+The demo is Clean Sweep: Coco, a simulated cleaning robot in the IslandDAO V5 villa in Florianópolis, takes one photo of a room and pays a chain of skills. Each skill has its own payout wallet and gets 100% of its price.
+
+## Skills (x402, solana-devnet, devnet USDC)
+
+- [Litter Spotter](https://isla-skills-dao-2b40fb.netlify.app/api/skills/litter-spotter): AI (Claude Haiku with vision). Says which villa room a photo shows and lists the litter with a confidence for each item. 0.01 USDC per call.
+- [Human Reviewer](https://isla-skills-dao-2b40fb.netlify.app/api/skills/human-reviewer): a real person answers when the AI is unsure. 0.005 USDC, paid to whoever answers.
+- [Cleanup Planner](https://isla-skills-dao-2b40fb.netlify.app/api/skills/cleanup-planner): turns a litter list into a cleanup plan (order, Brazil's recycling bin colours, minutes, % recyclable). 0.002 USDC per call.
+
+## How an agent calls a skill
+
+1. `POST /api/skills/{id}` with a JSON body. The answer is `402 Payment Required` with x402 v1 `accepts` (scheme `exact`, network `solana-devnet`, devnet USDC mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`, `maxAmountRequired`, `payTo` = the skill maker's wallet, `extra.feePayer` = the facilitator).
+2. Sign a USDC `transferChecked` for that amount to `payTo` with your own devnet wallet, as an x402 `exact` Solana payment, and send it base64-encoded in the `X-PAYMENT` header on the same request.
+3. The store verifies and settles through an x402 facilitator and answers `200` with the result and an `X-PAYMENT-RESPONSE` header (the Solana transaction). If the work fails, the payment is not settled.
+
+Bodies: Litter Spotter `{"image": "data:image/jpeg;base64,..."}` (5 photos per visitor a day, 100 in total); Cleanup Planner `{"items": [{"type": "can", "label": "soda can", "count": 1, "where": "table"}]}`; Human Reviewer is called with the `spotId` of an unsure Litter Spotter result.
+
+## Docs and machine-readable files
+
+- [OpenAPI description](https://isla-skills-dao-2b40fb.netlify.app/openapi.json): every endpoint, request and response
+- [API catalog (RFC 9727)](https://isla-skills-dao-2b40fb.netlify.app/.well-known/api-catalog)
+- [MCP server](https://isla-skills-dao-2b40fb.netlify.app/mcp): Streamable HTTP, read-only tools `list_skills`, `get_skill`, `get_coco_wallet`, `get_usage_stats` ([server card](https://isla-skills-dao-2b40fb.netlify.app/.well-known/mcp/server-card.json))
+- [Agent skill: how to use Isla Skills](https://isla-skills-dao-2b40fb.netlify.app/.well-known/agent-skills/isla-skills/SKILL.md)
+- [Home page as Markdown](https://isla-skills-dao-2b40fb.netlify.app/index.md) and [review page as Markdown](https://isla-skills-dao-2b40fb.netlify.app/review.md) (also served at `/` and `/review` with `Accept: text/markdown`)
+- [Source code](https://github.com/katamar-lang/isla-skills) (MIT)
+
+## Read-only endpoints
+
+- [GET /api/coco](https://isla-skills-dao-2b40fb.netlify.app/api/coco): Coco's wallet (address, devnet USDC balance, daily budget, photo limits) and the skills with their payout wallets
+- [GET /api/stats](https://isla-skills-dao-2b40fb.netlify.app/api/stats): usage read from Solana (photos analyzed, paid skill calls, USDC paid to skill makers, people paid for reviews)
+- [GET /api/skills/{id}](https://isla-skills-dao-2b40fb.netlify.app/api/skills/litter-spotter): one skill (name, kind, price, what it does, payout wallet)
+- [GET /api/reviews](https://isla-skills-dao-2b40fb.netlify.app/api/reviews): photos waiting for a person to review
+
+## Optional
+
+- [Review page](https://isla-skills-dao-2b40fb.netlify.app/review): people earn devnet USDC by answering the robot's questions with any Solana wallet (Solflare, Phantom, Backpack…)
